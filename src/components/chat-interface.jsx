@@ -645,9 +645,11 @@ export default function ChatInterface() {
                                                                         <div className="flex items-center gap-2 px-2 py-0.5 rounded-lg bg-[var(--border)]/20 text-[12px] font-bold">
                                                                             <button
                                                                                 onClick={() => {
-                                                                                    const siblings = [msg.id, ...msg.siblingIds].sort();
-                                                                                    const currentIndex = siblings.indexOf(msg.id);
-                                                                                    const targetId = siblings[(currentIndex - 1 + siblings.length) % siblings.length];
+                                                                                    const siblings = (activeConversation.allMessages || [])
+                                                                                        .filter(m => m.id === msg.id || (msg.siblingIds || []).includes(m.id))
+                                                                                        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                                    const currentIndex = siblings.findIndex(s => s.id === msg.id);
+                                                                                    const targetId = siblings[(currentIndex - 1 + siblings.length) % siblings.length].id;
                                                                                     switchMessageVersion(activeConversationId, msg.id, targetId);
                                                                                 }}
                                                                                 className="hover:text-[var(--foreground)] transition-colors"
@@ -655,13 +657,20 @@ export default function ChatInterface() {
                                                                                 <ChevronLeft size={14} />
                                                                             </button>
                                                                             <span className="min-w-[20px] text-center">
-                                                                                {[msg.id, ...msg.siblingIds].sort().indexOf(msg.id) + 1}/{msg.siblingIds.length + 1}
+                                                                                {(() => {
+                                                                                    const siblings = (activeConversation.allMessages || [])
+                                                                                        .filter(m => m.id === msg.id || (msg.siblingIds || []).includes(m.id))
+                                                                                        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                                    return siblings.findIndex(s => s.id === msg.id) + 1;
+                                                                                })()}/{msg.siblingIds.length + 1}
                                                                             </span>
                                                                             <button
                                                                                 onClick={() => {
-                                                                                    const siblings = [msg.id, ...msg.siblingIds].sort();
-                                                                                    const currentIndex = siblings.indexOf(msg.id);
-                                                                                    const targetId = siblings[(currentIndex + 1) % siblings.length];
+                                                                                    const siblings = (activeConversation.allMessages || [])
+                                                                                        .filter(m => m.id === msg.id || (msg.siblingIds || []).includes(m.id))
+                                                                                        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                                    const currentIndex = siblings.findIndex(s => s.id === msg.id);
+                                                                                    const targetId = siblings[(currentIndex + 1) % siblings.length].id;
                                                                                     switchMessageVersion(activeConversationId, msg.id, targetId);
                                                                                 }}
                                                                                 className="hover:text-[var(--foreground)] transition-colors"
@@ -787,8 +796,11 @@ export default function ChatInterface() {
 
                                                                 {/* Regenerate Dropdown */}
                                                                 {regenerateId === msg.id && (
-                                                                    <div className="absolute bottom-full left-0 mb-2 w-64 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl p-1.5 z-50 regenerate-menu">
-                                                                        <div className="px-3 py-2 text-[11px] font-bold text-[var(--sidebar-foreground)] uppercase opacity-50">Regenerate with</div>
+                                                                    <div className={cn(
+                                                                        "absolute left-0 w-60 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl p-1 z-50 regenerate-menu max-h-[280px] overflow-y-auto custom-scrollbar",
+                                                                        idx === 0 ? "top-full mt-2" : "bottom-full mb-2"
+                                                                    )}>
+                                                                        <div className="px-3 py-1.5 text-[10px] font-bold text-[var(--sidebar-foreground)] uppercase opacity-50">Regenerate with</div>
                                                                         {models.map((model, mIdx) => (
                                                                             <button
                                                                                 key={mIdx}
@@ -797,12 +809,12 @@ export default function ChatInterface() {
                                                                                     setRegenerateId(null);
                                                                                     regenerateResponse(activeConversationId, model.model, model.name);
                                                                                 }}
-                                                                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[var(--border)]/50 text-[var(--foreground)] transition-all text-left group/item"
+                                                                                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[var(--border)]/50 text-[var(--foreground)] transition-all text-left group/item"
                                                                             >
-                                                                                <div className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--border)]/30 overflow-hidden">
-                                                                                    <img src={model.icon} className="w-3.5 h-3.5 object-contain model-icon" />
+                                                                                <div className="w-4.5 h-4.5 flex items-center justify-center rounded-md bg-[var(--border)]/30 overflow-hidden shrink-0">
+                                                                                    <img src={model.icon} className="w-3 h-3 object-contain model-icon" />
                                                                                 </div>
-                                                                                <span className="text-[14px] font-medium">{model.name}</span>
+                                                                                <span className="text-[13px] font-medium truncate">{model.name}</span>
                                                                             </button>
                                                                         ))}
                                                                     </div>
@@ -814,9 +826,11 @@ export default function ChatInterface() {
                                                             <div className="flex items-center gap-2 px-2 py-0.5 mt-2 rounded-lg bg-[var(--border)]/20 text-[11px] font-bold text-[var(--sidebar-foreground)]">
                                                                 <button
                                                                     onClick={() => {
-                                                                        const siblings = [msg.id, ...msg.siblingIds].sort();
-                                                                        const currentIndex = siblings.indexOf(msg.id);
-                                                                        const targetId = siblings[(currentIndex - 1 + siblings.length) % siblings.length];
+                                                                        const siblings = (activeConversation.allMessages || [])
+                                                                            .filter(m => m.id === msg.id || (msg.siblingIds || []).includes(m.id))
+                                                                            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                        const currentIndex = siblings.findIndex(s => s.id === msg.id);
+                                                                        const targetId = siblings[(currentIndex - 1 + siblings.length) % siblings.length].id;
                                                                         switchMessageVersion(activeConversationId, msg.id, targetId);
                                                                     }}
                                                                     className="hover:text-[var(--foreground)] transition-colors"
@@ -824,13 +838,20 @@ export default function ChatInterface() {
                                                                     <ChevronLeft size={13} />
                                                                 </button>
                                                                 <span className="min-w-[18px] text-center">
-                                                                    {[msg.id, ...msg.siblingIds].sort().indexOf(msg.id) + 1}/{msg.siblingIds.length + 1}
+                                                                    {(() => {
+                                                                        const siblings = (activeConversation.allMessages || [])
+                                                                            .filter(m => m.id === msg.id || (msg.siblingIds || []).includes(m.id))
+                                                                            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                        return siblings.findIndex(s => s.id === msg.id) + 1;
+                                                                    })()}/{msg.siblingIds.length + 1}
                                                                 </span>
                                                                 <button
                                                                     onClick={() => {
-                                                                        const siblings = [msg.id, ...msg.siblingIds].sort();
-                                                                        const currentIndex = siblings.indexOf(msg.id);
-                                                                        const targetId = siblings[(currentIndex + 1) % siblings.length];
+                                                                        const siblings = (activeConversation.allMessages || [])
+                                                                            .filter(m => m.id === msg.id || (msg.siblingIds || []).includes(m.id))
+                                                                            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                                                        const currentIndex = siblings.findIndex(s => s.id === msg.id);
+                                                                        const targetId = siblings[(currentIndex + 1) % siblings.length].id;
                                                                         switchMessageVersion(activeConversationId, msg.id, targetId);
                                                                     }}
                                                                     className="hover:text-[var(--foreground)] transition-colors"
