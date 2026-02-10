@@ -31,10 +31,17 @@ export function ChatProvider({ children }) {
                 const restored = parsed.map(conv => ({
                     ...conv,
                     updatedAt: conv.updatedAt ? new Date(conv.updatedAt) : null,
-                    messages: conv.messages.map(msg => ({
+                    messages: (conv.activePath || []).map(id => {
+                        const m = (conv.allMessages || conv.messages || []).find(msg => msg.id === id);
+                        return m ? { ...m, timestamp: new Date(m.timestamp) } : null;
+                    }).filter(Boolean),
+                    allMessages: (conv.allMessages || conv.messages || []).map(msg => ({
                         ...msg,
-                        timestamp: new Date(msg.timestamp)
-                    }))
+                        timestamp: new Date(msg.timestamp),
+                        // Ensure no messages are stuck in thinking state after refresh
+                        isThinking: false
+                    })),
+                    activePath: conv.activePath || (conv.messages || []).map(m => m.id)
                 }));
                 setConversations(restored);
             } catch (e) {
@@ -284,6 +291,22 @@ export function ChatProvider({ children }) {
         } catch (error) {
             if (error.name === 'AbortError') {
                 console.log('Fetch aborted');
+                setConversations(prev => prev.map(conv => {
+                    if (conv.id === conversationId) {
+                        const lastMsgId = conv.activePath[conv.activePath.length - 1];
+                        const updatedAllMessages = (conv.allMessages || []).map(msg =>
+                            msg.isThinking && msg.id === lastMsgId ? { ...msg, isThinking: false } : msg
+                        );
+                        const visibleMessages = conv.activePath.map(id => updatedAllMessages.find(m => m.id === id)).filter(Boolean);
+
+                        return {
+                            ...conv,
+                            allMessages: updatedAllMessages,
+                            messages: visibleMessages
+                        };
+                    }
+                    return conv;
+                }));
             } else {
                 console.error('Streaming error:', error);
                 setConversations(prev => prev.map(conv => {
@@ -647,11 +670,15 @@ export function ChatProvider({ children }) {
             // Also clear isThinking for any messages in this conversation
             setConversations(prev => prev.map(conv => {
                 if (conv.id === conversationId) {
+                    const updatedAllMessages = (conv.allMessages || []).map(msg =>
+                        msg.isThinking ? { ...msg, isThinking: false } : msg
+                    );
+                    const visibleMessages = (conv.activePath || []).map(id => updatedAllMessages.find(m => m.id === id)).filter(Boolean);
+
                     return {
                         ...conv,
-                        messages: conv.messages.map(msg =>
-                            msg.isThinking ? { ...msg, isThinking: false } : msg
-                        )
+                        allMessages: updatedAllMessages,
+                        messages: visibleMessages
                     };
                 }
                 return conv;

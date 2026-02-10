@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
     Plus,
     Search,
@@ -34,7 +34,6 @@ import Link from 'next/link';
 import { useChat } from '@/context/chat-context';
 import ExploreModal from './explore-modal';
 import AssistantIcon from './assistant-icon';
-import { useRef, useEffect } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 
 
