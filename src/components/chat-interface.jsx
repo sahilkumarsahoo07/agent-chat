@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
     PlusCircle,
     ArrowUp,
@@ -49,6 +49,39 @@ import SourceCard from './source-card';
 import SourcesSidebar from './sources-sidebar';
 import ShareChatModal from './share-chat-modal';
 import AssistantIcon from './assistant-icon';
+const MODELS = [
+    { name: 'Grok 4.1 Fast', icon: "https://www.google.com/s2/favicons?domain=x.ai&sz=128", model: 'x-ai/grok-4.1-fast' },
+    { name: 'Grok 4.1 Code', icon: "https://www.google.com/s2/favicons?domain=x.ai&sz=128", model: 'x-ai/grok-code-fast-1' },
+    { name: 'DeepSeek V3.2', icon: "https://www.google.com/s2/favicons?domain=deepseek.com&sz=128", model: 'deepseek/deepseek-v3.2' },
+    { name: 'Solar Pro', icon: "https://www.google.com/s2/favicons?domain=upstage.ai&sz=128", model: 'upstage/solar-pro-3:free' },
+    { name: 'GPT-5 Nano', icon: "https://www.google.com/s2/favicons?domain=openai.com&sz=128", model: 'gpt-5-nano', hasReasoning: true },
+    { name: 'GPT-4o Mini', icon: "https://www.google.com/s2/favicons?domain=openai.com&sz=128", model: 'openai/gpt-4o-mini' },
+    { name: 'GPT-4o', icon: "https://www.google.com/s2/favicons?domain=openai.com&sz=128", model: 'openai/gpt-4o' },
+    { name: 'Trinity Large', icon: "https://www.google.com/s2/favicons?domain=arcee.ai&sz=128", model: 'arcee-ai/trinity-large-preview:free' },
+    { name: 'DeepSeek Chimera', icon: "https://www.google.com/s2/favicons?domain=tngtech.com&sz=128", model: 'tngtech/deepseek-r1t-chimera:free', hasReasoning: true },
+    { name: 'NVIDIA Nemotron', icon: "https://www.google.com/s2/favicons?domain=nvidia.com&sz=128", model: 'nvidia/nemotron-3-nano-30b-a3b:free' },
+    { name: 'Claude 3.5 Sonnet', icon: "https://www.google.com/s2/favicons?domain=anthropic.com&sz=128", model: 'anthropic/claude-3.5-sonnet' },
+    { name: 'Llama 3.1 8B', icon: "https://www.google.com/s2/favicons?domain=meta.com&sz=128", model: 'meta-llama/llama-3.1-8b-instruct' },
+];
+
+function checkReasoningCapability(msg, activeAssistant, activeModel) {
+    // 1. If message already has reasoning, it's capable
+    if (msg?.reasoning) return true;
+
+    // 2. Check if the active assistant has reasoning action
+    if (activeAssistant?.actions?.includes('reasoning')) return true;
+
+    // 3. Check the message's specific model
+    if (msg?.modelName) {
+        const found = MODELS.find(m => m.name === msg.modelName || m.model === msg.modelName);
+        if (found?.hasReasoning) return true;
+    }
+
+    // 4. Fallback to current selection if it's the latest generating message
+    if (activeModel?.hasReasoning) return true;
+
+    return false;
+}
 
 function cn(...inputs) {
     return twMerge(clsx(inputs));
@@ -56,7 +89,17 @@ function cn(...inputs) {
 
 
 function CollapsibleReasoning({ content, isThinking }) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(isThinking);
+
+    useEffect(() => {
+        if (isThinking) {
+            setIsOpen(true);
+        } else if (content) {
+            // Auto collapse when thinking finishes and we have content
+            setIsOpen(false);
+        }
+    }, [isThinking, content]);
+
     if (!content && !isThinking) return null;
 
     return (
@@ -68,18 +111,34 @@ function CollapsibleReasoning({ content, isThinking }) {
                 <div className="flex items-center gap-2">
                     {isOpen ? <ChevronDown size={14} className="opacity-50" /> : <ChevronRight size={14} className="opacity-50" />}
                     <div className="relative">
-                        <BrainCircuit size={15} className={cn("text-[#3b82f6] transition-all", isThinking && "animate-pulse scale-110")} />
-                        {isThinking && <div className="absolute inset-0 bg-[#3b82f6]/40 rounded-full blur-sm animate-ping scale-150" />}
+                        <div className={cn(
+                            "p-1 rounded-full transition-all duration-500",
+                            isThinking && "bg-blue-500/10 shadow-[0_0_15px_rgba(59,130,246,0.3)] ring-1 ring-blue-500/30"
+                        )}>
+                            <BrainCircuit
+                                size={15}
+                                className={cn(
+                                    "text-[#3b82f6] transition-all duration-700",
+                                    isThinking && "scale-110 drop-shadow-[0_0_5px_rgba(59,130,246,0.8)]"
+                                )}
+                            />
+                        </div>
+                        {isThinking && (
+                            <>
+                                <div className="absolute inset-0 bg-[#3b82f6]/40 rounded-full blur-sm animate-ping scale-150 opacity-30" />
+                                <div className="absolute inset-0 bg-[#3b82f6]/20 rounded-full blur-md animate-pulse scale-125 opacity-50" />
+                            </>
+                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="tracking-[0.1em]">Reasoning</span>
+                    <span className="tracking-[0.1em] text-[#3b82f6]">REASONING</span>
                     {!isOpen && !isThinking && <span className="opacity-40 lowercase font-normal italic text-[10px] transform translate-y-[0.5px]">(click to expand)</span>}
                     {isThinking && (
-                        <div className="flex items-center gap-1 ml-1">
-                            <span className="w-1 h-1 bg-[#3b82f6] rounded-full animate-bounce [animation-delay:-0.3s]" />
-                            <span className="w-1 h-1 bg-[#3b82f6] rounded-full animate-bounce [animation-delay:-0.15s]" />
-                            <span className="w-1 h-1 bg-[#3b82f6] rounded-full animate-bounce" />
+                        <div className="flex items-center gap-1.5 ml-1">
+                            <span className="w-1.5 h-1.5 bg-[#3b82f6] rounded-full animate-bounce [animation-delay:-0.3s] shadow-[0_0_8px_#3b82f6]" />
+                            <span className="w-1.5 h-1.5 bg-[#3b82f6] rounded-full animate-bounce [animation-delay:-0.15s] shadow-[0_0_8px_#3b82f6]" />
+                            <span className="w-1.5 h-1.5 bg-[#3b82f6] rounded-full animate-bounce shadow-[0_0_8px_#3b82f6]" />
                         </div>
                     )}
                 </div>
@@ -93,7 +152,7 @@ function CollapsibleReasoning({ content, isThinking }) {
                         className="overflow-hidden"
                     >
                         <div className="text-[13.5px] text-[var(--sidebar-foreground)] opacity-75 leading-relaxed pb-3 pr-4 border-b border-[var(--border)]/30 mb-2">
-                            <MarkdownContent content={content || '_Thinking..._'} />
+                            <MarkdownContent content={content || (isThinking ? '_Reasoning... (loading)_' : '')} />
                         </div>
                     </motion.div>
                 )}
@@ -138,42 +197,31 @@ export default function ChatInterface() {
             const saved = localStorage.getItem('agent_selected_model');
             if (saved) {
                 try {
-                    const parsed = JSON.parse(saved);
-                    if (parsed && parsed.name) return parsed;
+                    return JSON.parse(saved);
                 } catch (e) {
-                    console.error('Failed to parse saved model:', e);
+                    console.error('Failed to parse saved model', e);
                 }
             }
         }
-        return {
-            name: 'Grok 4.1 Fast',
-            icon: "https://www.google.com/s2/favicons?domain=x.ai&sz=128",
-            model: 'x-ai/grok-4.1-fast'
-        };
+        return MODELS[6]; // Default to GPT-4o
     });
+
     const [isMounted, setIsMounted] = useState(false);
 
-    const models = [
-        { name: 'Grok 4.1 Fast', icon: "https://www.google.com/s2/favicons?domain=x.ai&sz=128", model: 'x-ai/grok-4.1-fast' },
-        { name: 'Grok 4.1 Code', icon: "https://www.google.com/s2/favicons?domain=x.ai&sz=128", model: 'x-ai/grok-code-fast-1' },
-        { name: 'DeepSeek V3.2', icon: "https://www.google.com/s2/favicons?domain=deepseek.com&sz=128", model: 'deepseek/deepseek-v3.2' },
-        { name: 'Solar Pro', icon: "https://www.google.com/s2/favicons?domain=upstage.ai&sz=128", model: 'upstage/solar-pro-3:free' },
-        { name: 'GPT-5 Nano', icon: "https://www.google.com/s2/favicons?domain=openai.com&sz=128", model: 'gpt-5-nano' },
-        { name: 'GPT-4o Mini', icon: "https://www.google.com/s2/favicons?domain=openai.com&sz=128", model: 'openai/gpt-4o-mini' },
-        { name: 'GPT-4o', icon: "https://www.google.com/s2/favicons?domain=openai.com&sz=128", model: 'openai/gpt-4o' },
-        { name: 'Trinity Large', icon: "https://www.google.com/s2/favicons?domain=arcee.ai&sz=128", model: 'arcee-ai/trinity-large-preview:free' },
-        { name: 'DeepSeek Chimera', icon: "https://www.google.com/s2/favicons?domain=tngtech.com&sz=128", model: 'tngtech/deepseek-r1t-chimera:free' },
-        { name: 'NVIDIA Nemotron', icon: "https://www.google.com/s2/favicons?domain=nvidia.com&sz=128", model: 'nvidia/nemotron-3-nano-30b-a3b:free' },
-        { name: 'Claude 3.5 Sonnet', icon: "https://www.google.com/s2/favicons?domain=anthropic.com&sz=128", model: 'anthropic/claude-3.5-sonnet' },
-        { name: 'Llama 3.1 8B', icon: "https://www.google.com/s2/favicons?domain=meta.com&sz=128", model: 'meta-llama/llama-3.1-8b-instruct' },
-    ];
+    const models = MODELS;
 
     const activeModel = useMemo(() => {
+        // If conversation has a specific model saved, use that for display/logic
+        if (activeConversation?.modelId) {
+            const found = MODELS.find(m => m.model === activeConversation.modelId);
+            if (found) return found;
+        }
+        // If an assistant is active and has a specific model, use that
         if (activeAssistant?.model && activeAssistant.model !== 'user_default') {
             return models.find(m => m.model === activeAssistant.model) || selectedModel;
         }
         return selectedModel;
-    }, [activeAssistant, selectedModel]);
+    }, [activeAssistant, selectedModel, models]);
 
     const isModelLocked = activeAssistant?.model && activeAssistant.model !== 'user_default';
 
@@ -569,17 +617,31 @@ export default function ChatInterface() {
                                             )}
 
                                             <div className="flex flex-col min-w-0">
-                                                {(msg.reasoning || (msg.isThinking && activeAssistant?.actions?.includes('reasoning'))) && (
-                                                    <CollapsibleReasoning
-                                                        content={msg.reasoning}
-                                                        isThinking={msg.isThinking || (isGenerating && msg.id === activeConversation?.messages[activeConversation?.messages.length - 1]?.id && activeAssistant?.actions?.includes('reasoning'))}
-                                                    />
-                                                )}
-                                                {msg.isThinking && !msg.reasoning && !activeAssistant?.actions?.includes('reasoning') && (
-                                                    <div className="flex items-center gap-2.5 text-[14px] text-[var(--sidebar-foreground)] animate-pulse py-2 px-1">
-                                                        <span className="font-semibold tracking-tight">Thinking...</span>
-                                                    </div>
-                                                )}
+                                                {(() => {
+                                                    const isThinking = msg.isThinking || (isGenerating && msg.id === activeConversation?.messages[activeConversation?.messages.length - 1]?.id && !msg.content);
+
+                                                    // 1. Show thinking first if we have no reasoning content yet
+                                                    if (isThinking && !msg.reasoning) {
+                                                        return (
+                                                            <div className="flex items-center gap-2.5 text-[14px] text-[var(--sidebar-foreground)] animate-pulse py-2 px-1">
+                                                                <span className="font-semibold tracking-tight opacity-70">Thinking...</span>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // 2. Show Reasoning component if we have reasoning content
+                                                    if (msg.reasoning) {
+                                                        return (
+                                                            <CollapsibleReasoning
+                                                                content={msg.reasoning}
+                                                                isThinking={isThinking}
+                                                            />
+                                                        );
+                                                    }
+
+                                                    return null;
+                                                })()}
+
                                                 {!msg.isThinking && !msg.content && !msg.reasoning && (
                                                     <div className="w-5 h-5 rounded-full border-2 border-t-transparent border-[var(--foreground)] animate-spin my-3 opacity-50" />
                                                 )}
@@ -1045,6 +1107,7 @@ export default function ChatInterface() {
                 isOpen={showShareModal}
                 onClose={() => setShowShareModal(false)}
                 conversationId={activeConversationId}
+                activeModel={activeModel}
             />
 
             <SourcesSidebar

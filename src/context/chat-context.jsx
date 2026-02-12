@@ -338,40 +338,57 @@ export function ChatProvider({ children }) {
 
     const createConversation = useCallback((firstMessage, modelId = 'gpt-4o', modelName = 'GPT-4o', assistantId = null, fileAttachment = null) => {
         const newId = Date.now().toString();
-        const userMsg = {
-            id: '1',
-            role: 'user',
-            content: firstMessage,
-            timestamp: new Date(),
-            attachment: fileAttachment,
-            parentId: null,
-            siblingIds: []
-        };
-        const assistantMsg = {
-            id: '2',
-            role: 'assistant',
-            content: '',
-            isThinking: true,
-            timestamp: new Date(),
-            modelName: modelName,
-            parentId: '1',
-            siblingIds: []
-        };
+
+        // Check if we have an initial message or attachment
+        const hasInitialContent = (firstMessage && firstMessage.trim().length > 0) || fileAttachment;
+
+        let messages = [];
+        let allMessages = [];
+        let activePath = [];
+
+        if (hasInitialContent) {
+            const userMsg = {
+                id: '1',
+                role: 'user',
+                content: firstMessage,
+                timestamp: new Date(),
+                attachment: fileAttachment,
+                parentId: null,
+                siblingIds: []
+            };
+            const assistantMsg = {
+                id: '2',
+                role: 'assistant',
+                content: '',
+                isThinking: true,
+                timestamp: new Date(),
+                modelName: modelName,
+                parentId: '1',
+                siblingIds: []
+            };
+            messages = [userMsg, assistantMsg];
+            allMessages = [userMsg, assistantMsg];
+            activePath = ['1', '2'];
+        }
 
         const newConversation = {
             id: newId,
-            title: firstMessage ? (firstMessage.substring(0, 30) + (firstMessage.length > 30 ? '...' : '')) : (fileAttachment?.name || 'New Chat'),
-            messages: [userMsg, assistantMsg],
-            allMessages: [userMsg, assistantMsg], // Stores all versions/branches
-            activePath: ['1', '2'], // IDs of messages in the current path
-            assistantId: assistantId
+            title: hasInitialContent ? (firstMessage ? (firstMessage.substring(0, 30) + (firstMessage.length > 30 ? '...' : '')) : (fileAttachment?.name || 'New Chat')) : 'New Chat',
+            messages: messages,
+            allMessages: allMessages, // Stores all versions/branches
+            activePath: activePath, // IDs of messages in the current path
+            assistantId: assistantId,
+            modelId: modelId,
+            modelName: modelName
         };
 
         setConversations(prev => [newConversation, ...prev]);
         setActiveConversationId(newId);
 
-        // Fetch real response
-        fetchOpenAIResponse(newId, [userMsg], modelId, activeProject?.instructions);
+        // Fetch real response only if we have content
+        if (hasInitialContent) {
+            fetchOpenAIResponse(newId, [messages[0]], modelId, activeProject?.instructions);
+        }
 
         return newId;
     }, [fetchOpenAIResponse, activeProject]);
@@ -402,6 +419,31 @@ export function ChatProvider({ children }) {
         setConversations(prev => [newConversation, ...prev]);
         setActiveConversationId(newId);
 
+        return newId;
+    }, []);
+
+    const continueChat = useCallback((title, messages, assistantId) => {
+        const newId = Date.now().toString();
+        // Map shared messages to internal format with unique IDs and proper timestamps
+        const restoredMessages = messages.map((m, idx) => ({
+            ...m,
+            id: (idx + 1).toString(),
+            timestamp: new Date(m.timestamp || Date.now()),
+            parentId: idx > 0 ? (idx).toString() : null,
+            siblingIds: []
+        }));
+
+        const newConversation = {
+            id: newId,
+            title: title || 'Continued Chat',
+            messages: restoredMessages,
+            allMessages: restoredMessages,
+            activePath: restoredMessages.map(m => m.id),
+            assistantId: assistantId
+        };
+
+        setConversations(prev => [newConversation, ...prev]);
+        setActiveConversationId(newId);
         return newId;
     }, []);
 
@@ -801,6 +843,7 @@ export function ChatProvider({ children }) {
         setActiveConversationId,
         createConversation,
         startAssistantChat,
+        continueChat,
         activeAssistants,
         setActiveAssistants,
         removeActiveAssistant,
