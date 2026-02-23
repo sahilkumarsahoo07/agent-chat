@@ -18,6 +18,7 @@ import MarkdownContent from '@/components/markdown-content';
 import AssistantIcon from '@/components/assistant-icon';
 import SourceCard from '@/components/source-card';
 import { useChat } from '@/context/chat-context';
+import { useAuth } from '@/context/auth-context';
 
 function cn(...inputs) {
     return twMerge(clsx(inputs));
@@ -58,6 +59,7 @@ function CollapsibleReasoning({ content }) {
 
 function SharedChatContent() {
     const { continueChat, createConversation } = useChat();
+    const { token } = useAuth();
     const router = useRouter();
     const [chatData, setChatData] = useState(null);
     const [seedData, setSeedData] = useState(null);
@@ -144,34 +146,61 @@ function SharedChatContent() {
 
     if (seedData) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center bg-[var(--background)]">
-                <div className="w-20 h-20 rounded-3xl bg-[var(--card)] border border-[var(--border)] flex items-center justify-center mb-8 shadow-xl">
-                    <AssistantIcon iconId={seedData.assistantIconId || 'general'} className="w-10 h-10 text-[var(--foreground)]" />
-                </div>
+            <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-[var(--background)] relative overflow-hidden">
+                {/* Decorative background elements */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-                <h1 className="text-3xl font-bold text-[var(--foreground)] mb-3">Start a New Chat</h1>
-                <p className="text-[var(--sidebar-foreground)] max-w-md mb-8 leading-relaxed">
-                    You are about to start a new conversation with <span className="font-bold text-[var(--foreground)]">{seedData.assistantName || 'AI Assistant'}</span> using the <span className="font-bold text-[var(--foreground)]">{seedData.modelName}</span> model.
-                </p>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="relative z-10 w-full max-w-lg"
+                >
+                    <div className="w-24 h-24 rounded-[2.5rem] bg-[var(--card)] border border-[var(--border)] flex items-center justify-center mx-auto mb-10 shadow-2xl ring-1 ring-white/10 group hover:scale-105 transition-transform duration-500">
+                        <AssistantIcon iconId={seedData.assistantIconId || 'general'} className="w-12 h-12 text-[var(--foreground)]" />
+                    </div>
 
-                <div className="flex flex-col gap-4 w-full max-w-sm">
-                    <button
-                        onClick={() => {
-                            const newId = createConversation('', seedData.modelId, seedData.modelName, seedData.assistantId);
-                            router.push(`/chat/${newId}`);
-                        }}
-                        className="w-full py-3.5 rounded-2xl bg-black text-white font-bold text-sm hover:opacity-90 transition-opacity shadow-lg flex items-center justify-center gap-2"
-                    >
-                        <MessageSquare size={18} />
-                        <span>Start Chat</span>
-                    </button>
-                    <a
-                        href="/"
-                        className="w-full py-3.5 rounded-2xl border border-[var(--border)] font-bold text-sm hover:bg-[var(--border)] transition-colors text-[var(--foreground)]"
-                    >
-                        Cancel
-                    </a>
-                </div>
+                    <div className="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
+                        <Sparkles size={12} className="text-blue-500" />
+                        <span className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.15em]">Seed Link • Fresh Session</span>
+                    </div>
+
+                    <h1 className="text-4xl font-black text-[var(--foreground)] mb-4 tracking-tight">Start a New Chat</h1>
+                    <p className="text-base text-[var(--sidebar-foreground)] max-w-sm mx-auto mb-10 leading-relaxed font-medium">
+                        Initiate a fresh conversation with <span className="text-[var(--foreground)] font-bold">{seedData.assistantName || 'AI Assistant'}</span> powered by <span className="text-[var(--foreground)] font-bold">{seedData.modelName}</span>.
+                    </p>
+
+                    <div className="grid gap-4 w-full max-w-[340px] mx-auto">
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={async () => {
+                                if (!token) {
+                                    const callbackUrl = encodeURIComponent(window.location.hash);
+                                    router.push(`/login?callbackUrl=/share${callbackUrl}`);
+                                    return;
+                                }
+                                const newId = await createConversation('', seedData.modelId, seedData.modelName, seedData.assistantId);
+                                if (newId) router.push(`/chat/${newId}`);
+                            }}
+                            className="w-full py-4.5 rounded-2xl bg-[var(--foreground)] text-[var(--background)] font-bold text-sm hover:opacity-95 transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-3"
+                        >
+                            <MessageSquare size={18} strokeWidth={2.5} />
+                            <span>Start Conversation</span>
+                        </motion.button>
+                        <a
+                            href="/"
+                            className="w-full py-4 rounded-2xl border border-[var(--border)] font-bold text-sm hover:bg-[var(--border)]/50 transition-all text-[var(--sidebar-foreground)] hover:text-[var(--foreground)]"
+                        >
+                            Cancel
+                        </a>
+                    </div>
+
+                    <p className="mt-12 text-[11px] font-bold text-[var(--sidebar-foreground)] uppercase tracking-widest opacity-40">
+                        Settings are pre-configured for this invitation
+                    </p>
+                </motion.div>
             </div>
         );
     }
@@ -291,10 +320,16 @@ function SharedChatContent() {
                         Import this chat into your workspace and continue where it left off with our powerful AI assistants.
                     </p>
                     <button
-                        onClick={() => {
+                        onClick={async () => {
                             if (chatData) {
-                                const newId = continueChat(chatData.title, chatData.messages, chatData.assistant?.id);
-                                router.push(`/chat/${newId}`);
+                                const newId = await continueChat(
+                                    chatData.title,
+                                    chatData.messages,
+                                    chatData.assistant?.id,
+                                    chatData.allMessages,
+                                    chatData.activePath
+                                );
+                                if (newId) router.push(`/chat/${newId}`);
                             }
                         }}
                         className="px-8 py-3 rounded-2xl bg-black text-white font-bold text-sm hover:opacity-90 transition-opacity shadow-lg"

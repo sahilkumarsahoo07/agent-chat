@@ -17,6 +17,10 @@
   --card-foreground: #171717;
   --input-bg: #ffffff;
   --scrollbar-thumb-hover: #d4d4d4;
+  /* --rating-like-bg: #2864e99e; */
+  --rating-like-text: #3470f1b5;
+  /* --rating-dislike-bg: #ee5050a6; */
+  --rating-dislike-text: #e73b3bab;
 }
 
 [data-theme='dark'] {
@@ -31,6 +35,10 @@
   --card-foreground: #ffffff;
   --input-bg: #212121;
   --scrollbar-thumb-hover: #404040;
+  --rating-like-bg: rgba(255, 255, 255, 0.1);
+  --rating-like-text: #ffffffbd;
+  --rating-dislike-bg: rgba(255, 255, 255, 0.1);
+  --rating-dislike-text: #ffffffbd;
 }
 
 body {
@@ -92,7 +100,6 @@ body {
 .markdown-container h4 {
   font-weight: 700;
   color: var(--foreground);
-  margin-top: 2rem;
   margin-bottom: 1rem;
 }
 

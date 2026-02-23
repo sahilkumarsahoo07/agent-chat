@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  name          String
+  password      String
+  avatar        String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  conversations Conversation[]
+  assistants    Assistant[]
+  projects      Project[]
+  sharedChats   SharedChat[]   @relation("SharedChatCreator")
+
+  @@map("users")
+}
+
+model Conversation {
+  id          String       @id @default(uuid())
+  title       String       @default("New Chat")
+  modelId     String?      @map("model_id")
+  modelName   String?      @map("model_name")
+  isPinned    Boolean      @default(false) @map("is_pinned")
+  assistantId String?      @map("assistant_id")
+  isLocked    Boolean      @default(false) @map("is_locked")
+  activePath  String[]     @default([]) @map("active_path")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  userId      String       @map("user_id")
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?      @map("project_id")
+  project     Project?     @relation(fields: [projectId], references: [id])
+  messages    Message[]
+  SharedChat  SharedChat[]
+
+  @@index([userId])
+  @@index([projectId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  role           String
+  content        String
+  reasoning      String?
+  modelName      String?      @map("model_name")
+  parentId       String?      @map("parent_id")
+  siblingIds     String[]     @map("sibling_ids")
+  version        Int          @default(1)
+  attachmentName String?      @map("attachment_name")
+  attachmentType String?      @map("attachment_type")
+  sources        Json?
+  rating         String?      @map("rating")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([parentId])
+  @@map("messages")
+}
+
+model Assistant {
+  id           String   @id @default(uuid())
+  name         String
+  description  String?
+  instructions String?
+  model        String   @default("gpt-4o")
+  temperature  Float    @default(0.7)
+  icon         String?
+  color        String?
+  actions      String[] @default([])
+  models       String[] @default([])
+  isPublic     Boolean  @default(false) @map("is_public")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  userId       String   @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("assistants")
+}
+
+model Project {
+  id            String         @id @default(uuid())
+  name          String
+  instructions  String?
+  color         String?
+  icon          String?
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  userId        String         @map("user_id")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  // Stored project chat metadata (kept in sync from Conversation.projectId)
+  // chatIds:     IDs of conversations belonging to this project
+  // chatDetails: lightweight info for each chat (id, title, path, timestamp, activePath, etc.)
+  chatIds     String[] @default([]) @map("chat_ids")
+  chatDetails Json?    @map("chat_details")
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model SharedChat {
+  id             String       @id @default(uuid())
+  shareToken     String       @unique @map("share_token")
+  isPublic       Boolean      @default(true) @map("is_public")
+  isUsed         Boolean      @default(false) @map("is_used")
+  usedBy         String?      @map("used_by")
+  expiresAt      DateTime?    @map("expires_at")
+  creatorId      String       @map("creator_id")
+  creator        User         @relation("SharedChatCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([shareToken])
+  @@index([creatorId])
+  @@map("shared_chats")
+}

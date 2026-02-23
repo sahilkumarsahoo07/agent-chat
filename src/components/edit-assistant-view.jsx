@@ -20,12 +20,13 @@ import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import DatePicker from './date-picker';
 import AssistantIcon from './assistant-icon';
+import { MODELS } from '@/lib/assistants-config';
 
 function cn(...inputs) {
     return twMerge(clsx(inputs));
 }
 
-export default function EditAssistantView({ initialAssistant, onBack }) {
+export default function EditAssistantView({ initialAssistant, isStatic = false, onBack }) {
     const { addProjectAssistant, removeProjectAssistant, startAssistantChat } = useChat();
     const router = useRouter();
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -38,25 +39,15 @@ export default function EditAssistantView({ initialAssistant, onBack }) {
     const [description, setDescription] = useState(initialAssistant?.description || '');
     const [instructions, setInstructions] = useState(initialAssistant?.instructions || '');
     const [model, setModel] = useState(initialAssistant?.model || 'user_default');
+    const [selectedModels, setSelectedModels] = useState(initialAssistant?.models || (initialAssistant?.model ? [initialAssistant.model] : ['user_default']));
     const [selectedActions, setSelectedActions] = useState(initialAssistant?.actions || []);
     const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
     const modelDropdownRef = useRef(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [modelError, setModelError] = useState(false);
 
-    const models = [
-        { name: 'User Default', iconId: 'sparkles', model: 'user_default' },
-        { name: 'Grok 4.1 Fast', icon: "https://www.google.com/s2/favicons?domain=x.ai&sz=128", model: 'x-ai/grok-4.1-fast' },
-        { name: 'DeepSeek V3.2', icon: "https://www.google.com/s2/favicons?domain=deepseek.com&sz=128", model: 'deepseek/deepseek-v3.2' },
-        { name: 'Solar Pro', icon: "https://www.google.com/s2/favicons?domain=upstage.ai&sz=128", model: 'upstage/solar-pro-3:free' },
-        { name: 'GPT-5 Nano', icon: "https://www.google.com/s2/favicons?domain=openai.com&sz=128", model: 'gpt-5-nano' },
-        { name: 'GPT-4o Mini', icon: "https://www.google.com/s2/favicons?domain=openai.com&sz=128", model: 'openai/gpt-4o-mini' },
-        { name: 'GPT-4o', icon: "https://www.google.com/s2/favicons?domain=openai.com&sz=128", model: 'openai/gpt-4o' },
-        { name: 'Trinity Large', icon: "https://www.google.com/s2/favicons?domain=arcee.ai&sz=128", model: 'arcee-ai/trinity-large-preview:free' },
-        { name: 'DeepSeek Chimera', icon: "https://www.google.com/s2/favicons?domain=tngtech.com&sz=128", model: 'tngtech/deepseek-r1t-chimera:free' },
-        { name: 'NVIDIA Nemotron', icon: "https://www.google.com/s2/favicons?domain=nvidia.com&sz=128", model: 'nvidia/nemotron-3-nano-30b-a3b:free' },
-        { name: 'Claude 3.5 Sonnet', icon: "https://www.google.com/s2/favicons?domain=anthropic.com&sz=128", model: 'anthropic/claude-3.5-sonnet' },
-    ];
 
-    const selectedModelData = models.find(m => m.model === model) || models[0];
+    const selectedModelData = MODELS.find(m => m.model === model) || MODELS[0];
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -76,34 +67,67 @@ export default function EditAssistantView({ initialAssistant, onBack }) {
         );
     };
 
-    const handleSave = () => {
-        if (!name.trim()) return; // Basic validation
+    const toggleModel = (modelId) => {
+        setModelError(false);
+        setSelectedModels(prev => {
+            if (prev.includes(modelId)) {
+                // Don't remove if it's the only real model
+                const realModels = prev.filter(m => m !== 'user_default');
+                if (realModels.length <= 1 && realModels.includes(modelId)) return prev;
+                return prev.filter(m => m !== modelId);
+            } else {
+                // Remove user_default when a real model is selected
+                return [...prev.filter(m => m !== 'user_default'), modelId];
+            }
+        });
+    };
 
-        const newAssistant = {
-            ...initialAssistant,
-            id: initialAssistant.id === 'new' ? Date.now().toString() : initialAssistant.id,
-            name,
-            description,
-            instructions,
-            model,
-            actions: selectedActions,
-            updatedAt: new Date().toISOString()
-        };
+    const handleSave = async () => {
+        if (!name.trim() || isSaving) return;
 
-        addProjectAssistant(newAssistant);
-        onBack();
+        const hasRealModel = selectedModels.some(m => m !== 'user_default');
+        if (!hasRealModel) {
+            setModelError(true);
+            return;
+        }
+        setModelError(false);
+
+        setIsSaving(true);
+        try {
+            // If static, force ID to be 'new' to create a copy
+            const assistantId = (initialAssistant.id === 'new' || isStatic) ? 'new' : initialAssistant.id;
+
+            const newAssistant = {
+                ...initialAssistant,
+                id: assistantId,
+                name,
+                description,
+                instructions,
+                model: selectedModels[0] || 'user_default', // backward compatibility
+                models: selectedModels,
+                actions: selectedActions,
+                updatedAt: new Date().toISOString()
+            };
+
+            await addProjectAssistant(newAssistant);
+            onBack();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleDelete = () => {
-        if (initialAssistant.id !== 'new') {
+        if (initialAssistant.id !== 'new' && !isStatic) {
             removeProjectAssistant(initialAssistant.id);
         }
         onBack();
     };
 
-    const handleStartChat = () => {
+    const handleStartChat = async () => {
         if (initialAssistant.id !== 'new') {
-            const id = startAssistantChat(initialAssistant);
+            const id = await startAssistantChat(initialAssistant);
             router.push(`/chat/${id}`);
         }
     };
@@ -259,21 +283,39 @@ export default function EditAssistantView({ initialAssistant, onBack }) {
                 </div>
 
                 <div className="space-y-4 pt-4">
-                    <label className="text-[10px] font-bold text-[var(--sidebar-foreground)] uppercase tracking-widest opacity-70">Default Model</label>
                     <div className="relative" ref={modelDropdownRef}>
                         <button
                             onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
                             className="w-full flex items-center justify-between bg-[var(--card)] border border-[var(--border)] rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-[var(--sidebar-foreground)]/30 transition-all text-[var(--foreground)] group"
                         >
                             <div className="flex items-center gap-3">
-                                <div className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--border)]/30 overflow-hidden shadow-sm">
-                                    {selectedModelData.iconId ? (
-                                        <AssistantIcon iconId={selectedModelData.iconId} className="w-3.5 h-3.5 opacity-80" />
-                                    ) : (
-                                        <img src={selectedModelData.icon} className="w-3.5 h-3.5 object-contain model-icon" />
+                                <div className="flex -space-x-1.5 overflow-hidden">
+                                    {selectedModels.slice(0, 3).map((mId, i) => {
+                                        const mData = MODELS.find(m => m.model === mId) || MODELS[0];
+                                        return (
+                                            <div key={i} className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--border)] border border-[var(--background)] overflow-hidden shadow-sm relative z-[10]">
+                                                {mData.iconId ? (
+                                                    <AssistantIcon iconId={mData.iconId} className="w-3 h-3 opacity-80" />
+                                                ) : (
+                                                    <img src={mData.icon} className="w-3 h-3 object-contain model-icon" />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                    {selectedModels.length > 3 && (
+                                        <div className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--border)] border border-[var(--background)] text-[8px] font-bold text-[var(--sidebar-foreground)] z-[0]">
+                                            +{selectedModels.length - 3}
+                                        </div>
                                     )}
                                 </div>
-                                <span className="font-medium">{selectedModelData.name}</span>
+                                <span className="font-medium">
+                                    {(() => {
+                                        const realModels = selectedModels.filter(m => m !== 'user_default');
+                                        if (realModels.length === 0) return 'Select Models';
+                                        if (realModels.length === 1) return MODELS.find(m => m.model === realModels[0])?.name || realModels[0];
+                                        return `${realModels.length} Models Selected`;
+                                    })()}
+                                </span>
                             </div>
                             <ChevronDown size={14} className={cn("text-[var(--sidebar-foreground)] opacity-50 transition-transform duration-300", isModelDropdownOpen && "rotate-180")} />
                         </button>
@@ -288,40 +330,48 @@ export default function EditAssistantView({ initialAssistant, onBack }) {
                                 >
                                     <div className="px-3 py-2 text-[10px] font-bold text-[var(--sidebar-foreground)] uppercase tracking-wider opacity-60">Select Default Model</div>
                                     <div className="space-y-0.5">
-                                        {models.map((m, idx) => (
-                                            <button
-                                                key={idx}
-                                                onClick={() => {
-                                                    setModel(m.model);
-                                                    setIsModelDropdownOpen(false);
-                                                }}
-                                                className={cn(
-                                                    "w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all group/item",
-                                                    model === m.model
-                                                        ? "bg-[var(--accent)]/10 text-[var(--accent)]"
-                                                        : "hover:bg-[var(--border)]/50 text-[var(--sidebar-foreground)] hover:text-[var(--foreground)]"
-                                                )}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-6 h-6 flex items-center justify-center rounded-lg bg-[var(--border)]/30 overflow-hidden shadow-sm transition-transform group-hover/item:scale-110">
-                                                        {m.iconId ? (
-                                                            <AssistantIcon iconId={m.iconId} className="w-4 h-4 opacity-80" />
-                                                        ) : (
-                                                            <img src={m.icon} className="w-4 h-4 object-contain model-icon" />
-                                                        )}
+                                        {MODELS.filter(m => m.model !== 'user_default').map((m, idx) => {
+                                            const isSelected = selectedModels.includes(m.model);
+                                            return (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => toggleModel(m.model)}
+                                                    className={cn(
+                                                        "w-full flex items-center justify-between px-3 py-2 rounded-xl transition-all group/item",
+                                                        isSelected
+                                                            ? "bg-[var(--accent)]/10 text-[var(--accent)]"
+                                                            : "hover:bg-[var(--border)]/50 text-[var(--sidebar-foreground)] hover:text-[var(--foreground)]"
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={cn(
+                                                            "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
+                                                            isSelected ? "bg-[var(--accent)] border-[var(--accent)]" : "border-[var(--border)] group-hover/item:border-[var(--sidebar-foreground)]/40"
+                                                        )}>
+                                                            <Check size={12} className={isSelected ? "text-[var(--accent-foreground)]" : "text-transparent"} />
+                                                        </div>
+                                                        <div className="w-6 h-6 flex items-center justify-center rounded-lg bg-[var(--border)]/30 overflow-hidden shadow-sm transition-transform group-hover/item:scale-110">
+                                                            {m.iconId ? (
+                                                                <AssistantIcon iconId={m.iconId} className="w-4 h-4 opacity-80" />
+                                                            ) : (
+                                                                <img src={m.icon} className="w-4 h-4 object-contain model-icon" />
+                                                            )}
+                                                        </div>
+                                                        <span className="text-[13px] font-medium">{m.name}</span>
                                                     </div>
-                                                    <span className="text-[13px] font-medium">{m.name}</span>
-                                                </div>
-                                                {model === m.model && (
-                                                    <Check size={14} className="text-[var(--accent)]" />
-                                                )}
-                                            </button>
-                                        ))}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
+                    {modelError && (
+                        <p className="text-red-500 text-[11px] mt-1.5 font-medium">
+                            Please select at least one model before saving.
+                        </p>
+                    )}
                 </div>
 
 
@@ -429,10 +479,10 @@ export default function EditAssistantView({ initialAssistant, onBack }) {
                             onClick={handleSave}
                             className="flex-1 bg-white text-black font-bold py-3 rounded-xl hover:opacity-90 transition-opacity active:scale-[0.99] text-sm"
                         >
-                            {initialAssistant.id === 'new' ? 'Create' : 'Update'}
+                            {initialAssistant.id === 'new' || isStatic ? 'Create' : 'Update'}
                         </button>
                     </div>
-                    {initialAssistant.id !== 'new' && (
+                    {initialAssistant.id !== 'new' && !isStatic && (
                         <button
                             onClick={handleDelete}
                             className="w-full flex items-center justify-center gap-2 bg-red-500/10 text-red-500 font-bold py-3 rounded-xl hover:bg-red-500/20 transition-colors active:scale-[0.99] text-sm mt-4"

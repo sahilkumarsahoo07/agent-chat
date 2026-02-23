@@ -32,8 +32,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useChat } from '@/context/chat-context';
 import AssistantIcon from './assistant-icon';
+import { STATIC_ASSISTANTS } from '@/lib/assistants-config';
 
 function cn(...inputs) {
     return twMerge(clsx(inputs));
@@ -41,7 +43,7 @@ function cn(...inputs) {
 
 export default function ExploreModal({ isOpen, onClose }) {
     const router = useRouter();
-    const { startAssistantChat, customAssistants, removeProjectAssistant, activeAssistants, setActiveAssistants } = useChat();
+    const { startAssistantChat, customAssistants, removeProjectAssistant, activeAssistants, setActiveAssistants, selectedAssistantId, setSelectedAssistantId } = useChat();
     const [showMenuId, setShowMenuId] = useState(null);
     const [activeTab, setActiveTab] = useState('Public');
     const menuRef = useRef(null);
@@ -49,8 +51,14 @@ export default function ExploreModal({ isOpen, onClose }) {
     const toggleAssistantPin = (assistant) => {
         if (activeAssistants.some(a => a.id === assistant.id)) {
             setActiveAssistants(prev => prev.filter(a => a.id !== assistant.id));
+            // Clear selection if this was the selected agent
+            if (selectedAssistantId === assistant.id) {
+                setSelectedAssistantId(null);
+            }
         } else {
             setActiveAssistants(prev => [...prev, assistant]);
+            // Auto-select this agent so it shows in the input box
+            setSelectedAssistantId(assistant.id);
         }
     };
 
@@ -66,35 +74,7 @@ export default function ExploreModal({ isOpen, onClose }) {
 
     if (!isOpen) return null;
 
-    const featuredAssistants = [
-        {
-            id: 'search',
-            name: 'Search',
-            description: 'Assistant with access to documents and knowledge from Connected Sources.',
-            iconId: 'search',
-            author: 'Agent',
-            actions: '1 Action',
-            visibility: 'Public'
-        },
-        {
-            id: 'general',
-            name: 'General',
-            description: 'Assistant with no search functionalities. Chat directly with the Large Language Model.',
-            iconId: 'general',
-            author: 'Agent',
-            actions: 'No Actions',
-            visibility: 'Public'
-        },
-        {
-            id: 'art',
-            name: 'Art',
-            description: 'Assistant for generating images based on descriptions.',
-            iconId: 'art',
-            author: 'Agent',
-            actions: '1 Action',
-            visibility: 'Public'
-        }
-    ];
+    const featuredAssistants = STATIC_ASSISTANTS;
 
     const filters = [
         { name: 'Public', icon: <Globe className="w-3.5 h-3.5" /> },
@@ -153,9 +133,9 @@ export default function ExploreModal({ isOpen, onClose }) {
                                 ref={menuRef}
                                 className="absolute right-0 mt-1 w-32 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100"
                             >
-                                <button
+                                <Link
+                                    href={`/assistants/edit/${assistant.id}`}
                                     onClick={() => {
-                                        router.push(`/assistants/edit/${assistant.id}`);
                                         setShowMenuId(null);
                                         onClose();
                                     }}
@@ -163,7 +143,7 @@ export default function ExploreModal({ isOpen, onClose }) {
                                 >
                                     <PenLine size={14} />
                                     Edit
-                                </button>
+                                </Link>
                                 <button
                                     onClick={() => {
                                         removeProjectAssistant(assistant.id);
@@ -189,14 +169,13 @@ export default function ExploreModal({ isOpen, onClose }) {
             <div className="flex items-center gap-2">
                 <button
                     onClick={() => {
-                        startAssistantChat(assistant);
+                        setSelectedAssistantId(assistant.id);
                         onClose();
-                        router.push('/');
                     }}
                     className="flex-1 flex items-center justify-center gap-1.5 bg-[var(--background)] border border-[var(--border)] hover:bg-[var(--border)]/40 py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-[0.98]"
                 >
                     <PenLine size={12} />
-                    Start Chat
+                    Select
                 </button>
                 <button
                     onClick={(e) => {
@@ -247,15 +226,13 @@ export default function ExploreModal({ isOpen, onClose }) {
                                 />
                             </div>
                             <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => {
-                                        router.push('/assistants/edit/new');
-                                        onClose();
-                                    }}
-                                    className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 px-4 py-2 rounded-lg font-bold text-xs transition-colors flex-shrink-0"
+                                <Link
+                                    href="/assistants/edit/new"
+                                    onClick={onClose}
+                                    className="bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90 px-4 py-2 rounded-lg font-bold text-xs transition-colors flex-shrink-0 flex items-center justify-center"
                                 >
                                     Create
-                                </button>
+                                </Link>
                                 <button
                                     onClick={onClose}
                                     className="p-2 hover:bg-[var(--border)] rounded-full transition-colors text-[var(--sidebar-foreground)]"

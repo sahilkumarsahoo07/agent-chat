@@ -14,6 +14,8 @@ const geistMono = Geist_Mono({
 import MainLayout from "@/components/main-layout";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ChatProvider } from "@/context/chat-context";
+import { AuthProvider } from "@/context/auth-context";
+import { ToastProvider } from "@/context/toast-context";
 
 export const metadata = {
   title: "Agent-Chat",
@@ -33,11 +35,15 @@ export default function RootLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         >
-          <ChatProvider>
-            <MainLayout>
-              {children}
-            </MainLayout>
-          </ChatProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <ChatProvider>
+                <MainLayout>
+                  {children}
+                </MainLayout>
+              </ChatProvider>
+            </ToastProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

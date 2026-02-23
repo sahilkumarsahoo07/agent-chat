@@ -5,6 +5,7 @@ import {
     FileText,
     Plus,
     ChevronRight,
+    ChevronLeft,
     Pencil,
     X,
     Check,
@@ -24,7 +25,8 @@ import {
     Command,
     Terminal,
     Mail,
-    Square
+    Square,
+    MoreVertical
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useChat } from '@/context/chat-context';
@@ -47,6 +49,7 @@ export default function ProjectView({ projectId }) {
         conversations,
         createConversation,
         addChatToProject,
+        removeChatFromProject,
         setActiveProjectId,
         setActiveConversationId,
     } = useChat();
@@ -63,9 +66,13 @@ export default function ProjectView({ projectId }) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [uploadedFile, setUploadedFile] = useState(null);
     const [isMounted, setIsMounted] = useState(false);
+    const [chatMenuOpenId, setChatMenuOpenId] = useState(null);
+    const [chatProjectSelectFor, setChatProjectSelectFor] = useState(null);
+    const [chatProjectSearchQuery, setChatProjectSearchQuery] = useState('');
 
     const fileInputRef = useRef(null);
     const dropdownRef = useRef(null);
+    const chatMenuRef = useRef(null);
 
     const models = [
         { name: 'Grok 4.1 Fast', icon: "https://www.google.com/s2/favicons?domain=x.ai&sz=128", model: 'x-ai/grok-4.1-fast' },
@@ -106,6 +113,11 @@ export default function ProjectView({ projectId }) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
             }
+            if (chatMenuRef.current && !chatMenuRef.current.contains(event.target)) {
+                setChatMenuOpenId(null);
+                setChatProjectSelectFor(null);
+                setChatProjectSearchQuery('');
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -144,8 +156,14 @@ export default function ProjectView({ projectId }) {
             }
         }
 
-        const newId = createConversation(message, selectedModel.model, selectedModel.name, null, fileData);
-        addChatToProject(projectId, newId);
+        // Create a new conversation, then reliably attach it to this project
+        const newId = await createConversation(message, selectedModel.model, selectedModel.name, null, fileData);
+        if (!newId) {
+            console.error('Failed to create conversation for project');
+            return;
+        }
+
+        await addChatToProject(projectId, newId);
         router.push(`/chat/${newId}`);
 
         setMessage('');
@@ -217,10 +235,14 @@ export default function ProjectView({ projectId }) {
 
         try {
             // Create a new conversation
-            const newChatId = createConversation(newChatInput);
+            const newChatId = await createConversation(newChatInput);
+            if (!newChatId) {
+                console.error('Failed to create project chat');
+                return;
+            }
 
-            // Link it to the project
-            addChatToProject(project.id, newChatId);
+            // Link it to the project (server + local state)
+            await addChatToProject(project.id, newChatId);
 
             // Navigate to the chat
             router.push(`/chat/${newChatId}`);
@@ -234,11 +256,38 @@ export default function ProjectView({ projectId }) {
         }
     };
 
-    // Filter chats belonging to this project and sort by recent
-    const projectChats = (project.chatIds || [])
-        .map(id => conversations.find(c => c.id === id))
+    // Filter chats belonging to this project and sort by most recently moved/updated
+    let projectChats = (project.chatIds || [])
+        .map(id => {
+            const chat = conversations.find(c => c.id === id);
+            const detail = Array.isArray(project.chatDetails)
+                ? project.chatDetails.find(d => d.id === id)
+                : null;
+            return chat ? { chat, detail } : null;
+        })
         .filter(Boolean)
-        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        .sort((a, b) => {
+            const aTime = a.detail?.movedAt || a.chat.updatedAt;
+            const bTime = b.detail?.movedAt || b.chat.updatedAt;
+            return new Date(bTime) - new Date(aTime);
+        });
+
+    // Fallback: if no metadata-based chats are found, derive from conversations.projectId
+    if (projectChats.length === 0 && Array.isArray(conversations)) {
+        projectChats = conversations
+            .filter(c => c.projectId === project.id)
+            .map(chat => {
+                const detail = Array.isArray(project.chatDetails)
+                    ? project.chatDetails.find(d => d.id === chat.id)
+                    : null;
+                return { chat, detail };
+            })
+            .sort((a, b) => {
+                const aTime = a.detail?.movedAt || a.chat.updatedAt;
+                const bTime = b.detail?.movedAt || b.chat.updatedAt;
+                return new Date(bTime) - new Date(aTime);
+            });
+    }
 
     return (
         <div className="flex-1 flex flex-col h-screen bg-[var(--background)] overflow-hidden">
@@ -363,34 +412,173 @@ export default function ProjectView({ projectId }) {
                 </div> */}
 
 
-                    {/* Recent Chats List */}
+                    {/* Project Chats Grid */}
                     <div className="space-y-4 pb-32">
-                        <h3 className="text-[13px] font-medium text-[var(--sidebar-foreground)] uppercase tracking-wider">Recent Chats</h3>
-                        <div className="space-y-1">
-                            {projectChats.length > 0 ? (
-                                projectChats.map(chat => (
-                                    <button
-                                        key={chat.id}
-                                        onClick={() => router.push(`/chat/${chat.id}`)}
-                                        className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-[var(--card)]/50 transition-all text-left group"
-                                    >
-                                        <div className="w-10 h-10 rounded-full border border-[var(--border)] flex items-center justify-center shrink-0">
-                                            <BrainCircuit size={18} className="text-[var(--sidebar-foreground)]" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="font-medium text-[14px] text-[var(--foreground)] truncate">{chat.title || 'Untitled Chat'}</div>
-                                            <div className="text-[12px] text-[var(--sidebar-foreground)] truncate">
-                                                Last message {new Date(chat.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </div>
-                                        </div>
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="text-[13px] text-[var(--sidebar-foreground)] italic opacity-60 pl-2">
-                                    No recent chats in this project.
-                                </div>
-                            )}
+                        <div className="flex items-center justify-between gap-2">
+                            <h3 className="text-[13px] font-medium text-[var(--sidebar-foreground)] uppercase tracking-wider">
+                                Project Chats
+                            </h3>
+                            <span className="text-[11px] text-[var(--sidebar-foreground)] opacity-70">
+                                {projectChats.length} chat{projectChats.length === 1 ? '' : 's'}
+                            </span>
                         </div>
+                        {projectChats.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {projectChats.map(({ chat, detail }) => {
+                                    const movedAt = detail?.movedAt || chat.updatedAt;
+                                    const pathLength = (detail?.activePath || chat.activePath || []).length;
+
+                                    return (
+                                        <div
+                                            key={chat.id}
+                                            className="relative group bg-[var(--card)]/40 border border-[var(--border)] rounded-xl p-3 hover:border-[var(--sidebar-foreground)]/50 hover:bg-[var(--card)]/70 transition-all flex flex-col gap-2"
+                                        >
+                                            <button
+                                                onClick={() => router.push(`/chat/${chat.id}`)}
+                                                className="flex items-start gap-3 text-left w-full"
+                                            >
+                                                <div className="w-9 h-9 rounded-full border border-[var(--border)] flex items-center justify-center shrink-0 bg-[var(--background)]/70">
+                                                    <BrainCircuit size={16} className="text-[var(--sidebar-foreground)]" />
+                                                </div>
+                                                <div className="flex-1 min-w-0 space-y-1">
+                                                    <div className="font-medium text-[14px] text-[var(--foreground)] truncate">
+                                                        {chat.title || 'Untitled Chat'}
+                                                    </div>
+                                                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[var(--sidebar-foreground)]">
+                                                        <span className="px-2 py-0.5 rounded-full bg-[var(--background)]/60 border border-[var(--border)]/60">
+                                                            Path steps: {pathLength || 0}
+                                                        </span>
+                                                        <span className="px-2 py-0.5 rounded-full bg-[var(--background)]/60 border border-[var(--border)]/60 flex items-center gap-1">
+                                                            <Clock size={10} />
+                                                            {(() => {
+                                                                const date = new Date(movedAt || chat.updatedAt);
+                                                                if (isNaN(date.getTime())) return 'Recently';
+                                                                return date.toLocaleString([], {
+                                                                    month: 'short',
+                                                                    day: 'numeric',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                    hour12: true
+                                                                });
+                                                            })()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </button>
+
+                                            {/* Chat row menu */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setChatMenuOpenId(prev => (prev === chat.id ? null : chat.id));
+                                                    setChatProjectSelectFor(null);
+                                                    setChatProjectSearchQuery('');
+                                                }}
+                                                className="absolute top-2 right-2 p-1.5 rounded-md text-[var(--sidebar-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--background)]/70 opacity-0 group-hover:opacity-100 transition-all"
+                                            >
+                                                <MoreVertical size={14} />
+                                            </button>
+
+                                            {chatMenuOpenId === chat.id && (
+                                                <div
+                                                    ref={chatMenuRef}
+                                                    className="absolute top-8 right-2 z-30 w-56 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden"
+                                                >
+                                                    <div className="p-1">
+                                                        {chatProjectSelectFor === chat.id ? (
+                                                            <div className="w-full">
+                                                                <div className="flex items-center gap-2 px-2 py-1.5 border-b border-[var(--border)]/50 mb-1">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setChatProjectSelectFor(null);
+                                                                            setChatProjectSearchQuery('');
+                                                                        }}
+                                                                        className="hover:bg-[var(--border)] rounded p-0.5"
+                                                                    >
+                                                                        <ChevronLeft size={14} className="text-[var(--sidebar-foreground)]" />
+                                                                    </button>
+                                                                    <input
+                                                                        autoFocus
+                                                                        type="text"
+                                                                        placeholder="Search Projects"
+                                                                        value={chatProjectSearchQuery}
+                                                                        onChange={(e) => setChatProjectSearchQuery(e.target.value)}
+                                                                        className="flex-1 bg-transparent border-none outline-none text-[12px] font-medium text-[var(--foreground)] placeholder:text-[var(--sidebar-foreground)]"
+                                                                    />
+                                                                </div>
+                                                                <div className="max-h-[180px] overflow-y-auto custom-scrollbar">
+                                                                    {projects
+                                                                        .filter(p => p.id !== project.id)
+                                                                        .filter(p => p.name.toLowerCase().includes(chatProjectSearchQuery.toLowerCase()))
+                                                                        .map(p => (
+                                                                            <button
+                                                                                key={p.id}
+                                                                                onClick={() => {
+                                                                                    setChatMenuOpenId(null);
+                                                                                    setChatProjectSelectFor(null);
+                                                                                    setChatProjectSearchQuery('');
+                                                                                    addChatToProject(p.id, chat.id);
+                                                                                }}
+                                                                                className="w-full flex items-center gap-2 px-2 py-1.5 text-[12px] text-[var(--sidebar-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--border)] rounded-lg text-left"
+                                                                            >
+                                                                                <Folder size={14} />
+                                                                                <span className="truncate">{p.name}</span>
+                                                                            </button>
+                                                                        ))}
+                                                                    {projects.filter(p => p.id !== project.id).length === 0 && (
+                                                                        <div className="px-2 py-2 text-[12px] text-[var(--sidebar-foreground)] italic">
+                                                                            No other projects
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setChatProjectSelectFor(chat.id);
+                                                                    }}
+                                                                    className="w-full flex items-center gap-2 px-2 py-1.5 text-[12px] text-[var(--sidebar-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--border)] rounded-lg text-left"
+                                                                >
+                                                                    <Upload size={12} />
+                                                                    <span>Move to Project</span>
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setChatMenuOpenId(null);
+                                                                        removeChatFromProject(project.id, chat.id);
+                                                                    }}
+                                                                    className="w-full flex items-center gap-2 px-2 py-1.5 text-[12px] text-[var(--sidebar-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--border)] rounded-lg text-left"
+                                                                >
+                                                                    <Folder size={12} />
+                                                                    <span>Remove from {project.name}</span>
+                                                                </button>
+                                                                <div className="my-1 h-px bg-[var(--border)]/60" />
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setChatMenuOpenId(null);
+                                                                        // Deleting conversation also removes it from projects via context
+                                                                        deleteConversation(chat.id);
+                                                                    }}
+                                                                    className="w-full flex items-center gap-2 px-2 py-1.5 text-[12px] text-red-500 hover:bg-red-500/10 rounded-lg text-left"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                    <span>Delete</span>
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-[13px] text-[var(--sidebar-foreground)] italic opacity-60 pl-2">
+                                No chats have been added to this project yet.
+                            </div>
+                        )}
                     </div>
 
                 </div>

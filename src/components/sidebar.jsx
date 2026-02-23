@@ -32,9 +32,11 @@ import { twMerge } from 'tailwind-merge';
 import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { useChat } from '@/context/chat-context';
+import { useAuth } from '@/context/auth-context';
 import ExploreModal from './explore-modal';
 import AssistantIcon from './assistant-icon';
 import { useRouter, useParams, usePathname } from 'next/navigation';
+import { STATIC_ASSISTANTS } from '@/lib/assistants-config';
 
 
 function cn(...inputs) {
@@ -176,8 +178,11 @@ export default function Sidebar() {
         createProject,
         updateProject,
         deleteProject,
-        addChatToProject
+        addChatToProject,
+        setSelectedAssistantId
     } = useChat();
+
+    const { logout, user } = useAuth();
 
     const router = useRouter();
     const params = useParams();
@@ -235,27 +240,65 @@ export default function Sidebar() {
         setSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
 
-    const staticAssistants = [
-        { id: 'general', name: 'General', iconId: 'general' },
-        { id: 'search', name: 'Search', iconId: 'search' },
-        { id: 'art', name: 'Art', iconId: 'art' },
-    ];
+    const staticAssistants = STATIC_ASSISTANTS;
 
-    // Get IDs of all chats that belong to any project
-    const allProjectChatIds = useMemo(() => {
-        return new Set(projects.flatMap(p => p.chatIds || []));
-    }, [projects]);
+    // Date grouping logic helpers
+    // Date grouping logic helpers
+    const getGroupLabel = (date) => {
+        const now = new Date();
+        const d = new Date(date);
 
-    // Group conversations - Only show those with user messages and NOT in any project
-    const todayChats = conversations
-        .filter(conv => conv.messages.some(m => m.role === 'user') && !allProjectChatIds.has(conv.id))
-        .sort((a, b) => {
-            if (a.isPinned && !b.isPinned) return -1;
-            if (!a.isPinned && b.isPinned) return 1;
-            const aTime = a.messages[a.messages.length - 1]?.timestamp || a.updatedAt;
-            const bTime = b.messages[b.messages.length - 1]?.timestamp || b.updatedAt;
-            return new Date(bTime) - new Date(aTime);
+        // Normalize to start of day for accurate comparison
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const dStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+        if (dStart >= todayStart) return 'Today';
+
+        const yesterdayStart = new Date(todayStart);
+        yesterdayStart.setDate(todayStart.getDate() - 1);
+        if (dStart >= yesterdayStart) return 'Yesterday';
+
+        const sevenDaysAgoStart = new Date(todayStart);
+        sevenDaysAgoStart.setDate(todayStart.getDate() - 7);
+        if (dStart >= sevenDaysAgoStart) return 'Previous 7 Days';
+
+        return 'Older';
+    };
+
+    // Group conversations - Only show those with user messages (or existing history)
+    // and NOT already assigned to any project
+    const chatGroups = useMemo(() => {
+        const groups = {
+            'Today': [],
+            'Yesterday': [],
+            'Previous 7 Days': [],
+            'Older': []
+        };
+
+        conversations
+            .filter(conv =>
+                ((conv.activePath && conv.activePath.length > 0) || conv.messages.some(m => m.role === 'user')) &&
+                !conv.projectId
+            )
+            .forEach(chat => {
+                const lastMsgTime = chat.lastActivityAt || chat.messages[chat.messages.length - 1]?.timestamp || chat.updatedAt;
+                const label = getGroupLabel(lastMsgTime);
+                groups[label].push(chat);
+            });
+
+        // Sort each group by timestamp (desc) and pin status
+        Object.keys(groups).forEach(label => {
+            groups[label].sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                const aTime = a.lastActivityAt || a.messages[a.messages.length - 1]?.timestamp || a.updatedAt;
+                const bTime = b.lastActivityAt || b.messages[b.messages.length - 1]?.timestamp || b.updatedAt;
+                return new Date(bTime) - new Date(aTime);
+            });
         });
+
+        return groups;
+    }, [conversations]);
 
     return (
         <div
@@ -271,7 +314,13 @@ export default function Sidebar() {
                 isCollapsed ? "justify-center" : "justify-between"
             )}>
                 {!isCollapsed && (
-                    <Link href="/" className="flex items-center gap-2 font-bold text-base xl:text-lg tracking-tight">
+                    <Link
+                        href="/"
+                        onClick={() => {
+                            setActiveProjectId(null);
+                            setSelectedAssistantId(null);
+                        }}
+                        className="flex items-center gap-2 font-bold text-base xl:text-lg tracking-tight">
                         <div className="w-5 h-5 bg-[var(--accent)] rounded-sm flex items-center justify-center flex-shrink-0">
                             <div className="w-1.5 h-1.5 bg-[var(--background)] rotate-45" />
                         </div>
@@ -300,7 +349,10 @@ export default function Sidebar() {
             <div className="px-3 md:px-4 py-4 md:py-6">
                 <Link
                     href="/chat/new-chat"
-                    onClick={() => setActiveProjectId(null)}
+                    onClick={() => {
+                        setActiveProjectId(null);
+                        setSelectedAssistantId(null);
+                    }}
                     className={cn(
                         "w-full flex items-center gap-2.5 p-1.5 border border-[var(--border)] rounded-lg hover:bg-[var(--background)] transition-all group",
                         isCollapsed ? "justify-center px-0" : "px-2.5"
@@ -321,9 +373,9 @@ export default function Sidebar() {
                 {staticAssistants.map((assistant) => (
                     <button
                         key={assistant.id}
-                        onClick={() => {
+                        onClick={async () => {
                             setActiveProjectId(null);
-                            const id = startAssistantChat(assistant);
+                            const id = await startAssistantChat(assistant);
                             router.push(`/chat/${id}`);
                         }}
                         className={cn(
@@ -352,9 +404,9 @@ export default function Sidebar() {
                         {activeAssistants.map((assistant) => (
                             <div key={assistant.id} className="relative group">
                                 <button
-                                    onClick={() => {
+                                    onClick={async () => {
                                         setActiveProjectId(null);
-                                        const id = startAssistantChat(assistant);
+                                        const id = await startAssistantChat(assistant);
                                         router.push(`/chat/${id}`);
                                     }}
                                     className={cn(
@@ -500,76 +552,79 @@ export default function Sidebar() {
                 <div className="pt-3 border-t border-[var(--border)]/60 space-y-4">
                     {/* Today Section */}
                     <div className="space-y-1">
-                        {!isCollapsed && (
-                            <button
-                                onClick={() => {
-                                    toggleSection('today');
-                                    setActiveProjectId(null);
-                                }}
-                                className="w-full px-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--sidebar-foreground)]/70 flex items-center gap-1.5 hover:text-[var(--foreground)] transition-colors group"
-                            >
-                                <ChevronDown
-                                    size={11}
-                                    className={cn(
-                                        "transition-transform opacity-70",
-                                        !sections.today && "-rotate-90"
-                                    )}
-                                />
-                                <span>Your Chats</span>
-                            </button>
-                        )}
-
-
-                        {!isCollapsed && sections.today && todayChats.map((chat) => (
-                            <div key={chat.id} className="relative group">
-                                <Link
-                                    href={`/chat/${chat.id}`}
-                                    onClick={() => setActiveProjectId(null)}
-                                    className={cn(
-                                        "w-full flex items-center gap-2.5 p-1.5 rounded-lg transition-all relative",
-                                        isCollapsed ? "justify-center" : "px-2.5",
-                                        activeConversationId === chat.id
-                                            ? "bg-[var(--border)] text-[var(--foreground)]"
-                                            : "hover:bg-[var(--border)]/50 text-[var(--sidebar-foreground)] hover:text-[var(--foreground)]"
-                                    )}
-                                >
-                                    {!isCollapsed && (
-                                        <div className="flex-1 min-w-0 pr-6">
-                                            <span className="text-[12px] xl:text-[13px] truncate text-left w-full font-medium block">
-                                                {chat.title}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {chat.isPinned && !isCollapsed && (
-                                        <Pin size={12} className="text-[var(--sidebar-foreground)] absolute right-2 top-1/2 -translate-y-1/2 group-hover:opacity-0 transition-opacity" />
-                                    )}
-                                    {isCollapsed && <History size={16} className={cn(activeConversationId === chat.id ? "text-[var(--foreground)]" : "text-[var(--sidebar-foreground)]")} />}
-                                </Link>
-
-                                {/* Hover Menu Trigger */}
-                                {!isCollapsed && (
+                        {!isCollapsed && Object.entries(chatGroups).map(([label, chats]) => (
+                            chats.length > 0 && (
+                                <div key={label} className="mt-4 first:mt-0">
                                     <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            setMenuPosition({
-                                                top: rect.bottom + 5,
-                                                left: rect.left,
-                                                triggerTop: rect.top
-                                            });
-                                            setMenuOpenId(menuOpenId === chat.id ? null : chat.id);
-                                            setIsProjectSelectMode(false);
-                                        }}
-                                        className={cn(
-                                            "absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md text-[var(--sidebar-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-all",
-                                            menuOpenId === chat.id ? "opacity-100 bg-[var(--background)] shadow-sm" : "opacity-0 group-hover:opacity-100"
-                                        )}
+                                        onClick={() => toggleSection(label.toLowerCase().replace(/\s+/g, '_'))}
+                                        className="w-full px-2 mb-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--sidebar-foreground)]/70 flex items-center gap-1.5 hover:text-[var(--foreground)] transition-colors group"
                                     >
-                                        <MoreVertical size={14} />
+                                        <ChevronDown
+                                            size={11}
+                                            className={cn(
+                                                "transition-transform opacity-70",
+                                                sections[label.toLowerCase().replace(/\s+/g, '_')] === false && "-rotate-90"
+                                            )}
+                                        />
+                                        <span>{label}</span>
                                     </button>
-                                )}
-                            </div>
+
+                                    {sections[label.toLowerCase().replace(/\s+/g, '_')] !== false && chats.map((chat) => (
+                                        <div key={chat.id} className="relative group">
+                                            <Link
+                                                href={`/chat/${chat.id}`}
+                                                onClick={() => {
+                                                    setActiveProjectId(null);
+                                                    setSelectedAssistantId(null);
+                                                }}
+                                                className={cn(
+                                                    "w-full flex items-center gap-2.5 p-1.5 rounded-lg transition-all relative",
+                                                    isCollapsed ? "justify-center" : "px-2.5",
+                                                    activeConversationId === chat.id
+                                                        ? "bg-[var(--border)] text-[var(--foreground)]"
+                                                        : "hover:bg-[var(--border)]/50 text-[var(--sidebar-foreground)] hover:text-[var(--foreground)]"
+                                                )}
+                                            >
+                                                {!isCollapsed && (
+                                                    <div className="flex-1 min-w-0 pr-6">
+                                                        <span className="text-[12px] xl:text-[13px] truncate text-left w-full font-medium block">
+                                                            {chat.title}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {chat.isPinned && !isCollapsed && (
+                                                    <Pin size={12} className="text-[var(--sidebar-foreground)] absolute right-2 top-1/2 -translate-y-1/2 group-hover:opacity-0 transition-opacity" />
+                                                )}
+                                                {isCollapsed && <History size={16} className={cn(activeConversationId === chat.id ? "text-[var(--foreground)]" : "text-[var(--sidebar-foreground)]")} />}
+                                            </Link>
+
+                                            {/* Hover Menu Trigger */}
+                                            {!isCollapsed && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        const rect = e.currentTarget.getBoundingClientRect();
+                                                        setMenuPosition({
+                                                            top: rect.bottom + 5,
+                                                            left: rect.left,
+                                                            triggerTop: rect.top
+                                                        });
+                                                        setMenuOpenId(menuOpenId === chat.id ? null : chat.id);
+                                                        setIsProjectSelectMode(false);
+                                                    }}
+                                                    className={cn(
+                                                        "absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md text-[var(--sidebar-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--background)] transition-all",
+                                                        menuOpenId === chat.id ? "opacity-100 bg-[var(--background)] shadow-sm" : "opacity-0 group-hover:opacity-100"
+                                                    )}
+                                                >
+                                                    <MoreVertical size={14} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )
                         ))}
                     </div>
                 </div>
@@ -683,7 +738,10 @@ export default function Sidebar() {
                             </div>
                         </div>
 
-                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-red-500/10 transition-colors group text-left text-red-500">
+                        <button
+                            onClick={() => logout()}
+                            className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-red-500/10 transition-colors group text-left text-red-500"
+                        >
                             <LogOut size={16} />
                             <span className="text-sm font-medium">Log out</span>
                         </button>
@@ -758,12 +816,12 @@ export default function Sidebar() {
                     )}
                 >
                     <div className="w-8 h-8 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-xs ring-1 ring-[var(--border)]">
-                        SK
+                        {user?.name ? user.name.substring(0, 2).toUpperCase() : 'US'}
                     </div>
                     {!isCollapsed && (
                         <div className="flex-1 min-w-0 text-left">
-                            <p className="text-[12px] xl:text-[13px] font-medium truncate">Sahil Kumar</p>
-                            <p className="text-[10px] text-[var(--sidebar-foreground)] leading-tight">Pro Plan</p>
+                            <p className="text-[12px] xl:text-[13px] font-medium truncate">{user?.name || 'User'}</p>
+                            <p className="text-[10px] text-[var(--sidebar-foreground)] leading-tight truncate">{user?.email || 'user@example.com'}</p>
                         </div>
                     )}
                     {!isCollapsed && <MoreHorizontal size={14} className="text-[var(--sidebar-foreground)]" />}
