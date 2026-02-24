@@ -5,6 +5,8 @@ import { success, error } from '@/lib/api-helpers';
 
 // GET /api/conversations
 // List all conversations for the authenticated user
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
     try {
         const auth = getAuthUser(request);

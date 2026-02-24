@@ -33,6 +33,8 @@ async function syncProject(projectId, tx) {
     });
 }
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
     try {
         const auth = getAuthUser(request);

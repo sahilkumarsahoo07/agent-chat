@@ -4,11 +4,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id            String         @id @default(uuid())
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
   email         String         @unique
   name          String
   password      String
@@ -24,19 +25,19 @@ model User {
 }
 
 model Conversation {
-  id          String       @id @default(uuid())
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
   title       String       @default("New Chat")
   modelId     String?      @map("model_id")
   modelName   String?      @map("model_name")
   isPinned    Boolean      @default(false) @map("is_pinned")
-  assistantId String?      @map("assistant_id")
+  assistantId String?      @map("assistant_id") @db.ObjectId
   isLocked    Boolean      @default(false) @map("is_locked")
   activePath  String[]     @default([]) @map("active_path")
   createdAt   DateTime     @default(now()) @map("created_at")
   updatedAt   DateTime     @updatedAt @map("updated_at")
-  userId      String       @map("user_id")
+  userId      String       @map("user_id") @db.ObjectId
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectId   String?      @map("project_id")
+  projectId   String?      @map("project_id") @db.ObjectId
   project     Project?     @relation(fields: [projectId], references: [id])
   messages    Message[]
   SharedChat  SharedChat[]
@@ -47,20 +48,20 @@ model Conversation {
 }
 
 model Message {
-  id             String       @id @default(uuid())
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
   role           String
   content        String
   reasoning      String?
   modelName      String?      @map("model_name")
-  parentId       String?      @map("parent_id")
-  siblingIds     String[]     @map("sibling_ids")
+  parentId       String?      @map("parent_id") @db.ObjectId
+  siblingIds     String[]     @map("sibling_ids") @db.ObjectId
   version        Int          @default(1)
   attachmentName String?      @map("attachment_name")
   attachmentType String?      @map("attachment_type")
   sources        Json?
   rating         String?      @map("rating")
   createdAt      DateTime     @default(now()) @map("created_at")
-  conversationId String       @map("conversation_id")
+  conversationId String       @map("conversation_id") @db.ObjectId
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
@@ -69,7 +70,7 @@ model Message {
 }
 
 model Assistant {
-  id           String   @id @default(uuid())
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
   name         String
   description  String?
   instructions String?
@@ -82,7 +83,7 @@ model Assistant {
   isPublic     Boolean  @default(false) @map("is_public")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  userId       String   @map("user_id")
+  userId       String   @map("user_id") @db.ObjectId
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -90,21 +91,21 @@ model Assistant {
 }
 
 model Project {
-  id            String         @id @default(uuid())
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
   name          String
   instructions  String?
   color         String?
   icon          String?
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
-  userId        String         @map("user_id")
+  userId        String         @map("user_id") @db.ObjectId
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversations Conversation[]
 
   // Stored project chat metadata (kept in sync from Conversation.projectId)
   // chatIds:     IDs of conversations belonging to this project
   // chatDetails: lightweight info for each chat (id, title, path, timestamp, activePath, etc.)
-  chatIds     String[] @default([]) @map("chat_ids")
+  chatIds     String[] @default([]) @map("chat_ids") @db.ObjectId
   chatDetails Json?    @map("chat_details")
 
   @@index([userId])
@@ -112,19 +113,18 @@ model Project {
 }
 
 model SharedChat {
-  id             String       @id @default(uuid())
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
   shareToken     String       @unique @map("share_token")
   isPublic       Boolean      @default(true) @map("is_public")
   isUsed         Boolean      @default(false) @map("is_used")
-  usedBy         String?      @map("used_by")
+  usedBy         String?      @map("used_by") @db.ObjectId
   expiresAt      DateTime?    @map("expires_at")
-  creatorId      String       @map("creator_id")
+  creatorId      String       @map("creator_id") @db.ObjectId
   creator        User         @relation("SharedChatCreator", fields: [creatorId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now()) @map("created_at")
-  conversationId String       @map("conversation_id")
+  conversationId String       @map("conversation_id") @db.ObjectId
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  @@index([shareToken])
   @@index([creatorId])
   @@map("shared_chats")
 }

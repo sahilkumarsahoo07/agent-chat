@@ -5,6 +5,8 @@ import { success, error } from '@/lib/api-helpers';
 
 // POST /api/messages
 // Save a new message to a conversation
+export const dynamic = 'force-dynamic';
+
 export async function POST(request) {
     try {
         const auth = getAuthUser(request);

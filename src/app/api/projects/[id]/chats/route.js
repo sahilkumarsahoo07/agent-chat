@@ -4,6 +4,8 @@ import prisma from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { success, error } from '@/lib/api-helpers';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request, { params }) {
     try {
         const auth = getAuthUser(request);

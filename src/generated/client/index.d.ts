@@ -3,7 +3,7 @@
  * Client
 **/
 
-import * as runtime from './runtime/client.js';
+import * as runtime from './runtime/library.js';
 import $Types = runtime.Types // general types
 import $Public = runtime.Types.Public
 import $Utils = runtime.Types.Utils
@@ -56,7 +56,7 @@ export type SharedChat = $Result.DefaultSelection<Prisma.$SharedChatPayload>
  * ```
  *
  *
- * Read more in our [docs](https://pris.ly/d/client).
+ * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
  */
 export class PrismaClient<
   ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
@@ -77,7 +77,7 @@ export class PrismaClient<
    * ```
    *
    *
-   * Read more in our [docs](https://pris.ly/d/client).
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
    */
 
   constructor(optionsArg ?: Prisma.Subset<ClientOptions, Prisma.PrismaClientOptions>);
@@ -94,53 +94,6 @@ export class PrismaClient<
   $disconnect(): $Utils.JsPromise<void>;
 
 /**
-   * Executes a prepared raw query and returns the number of affected rows.
-   * @example
-   * ```
-   * const result = await prisma.$executeRaw`UPDATE User SET cool = ${true} WHERE email = ${'user@email.com'};`
-   * ```
-   *
-   * Read more in our [docs](https://pris.ly/d/raw-queries).
-   */
-  $executeRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<number>;
-
-  /**
-   * Executes a raw query and returns the number of affected rows.
-   * Susceptible to SQL injections, see documentation.
-   * @example
-   * ```
-   * const result = await prisma.$executeRawUnsafe('UPDATE User SET cool = $1 WHERE email = $2 ;', true, 'user@email.com')
-   * ```
-   *
-   * Read more in our [docs](https://pris.ly/d/raw-queries).
-   */
-  $executeRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<number>;
-
-  /**
-   * Performs a prepared raw query and returns the `SELECT` data.
-   * @example
-   * ```
-   * const result = await prisma.$queryRaw`SELECT * FROM User WHERE id = ${1} OR email = ${'user@email.com'};`
-   * ```
-   *
-   * Read more in our [docs](https://pris.ly/d/raw-queries).
-   */
-  $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<T>;
-
-  /**
-   * Performs a raw query and returns the `SELECT` data.
-   * Susceptible to SQL injections, see documentation.
-   * @example
-   * ```
-   * const result = await prisma.$queryRawUnsafe('SELECT * FROM User WHERE id = $1 OR email = $2;', 1, 'user@email.com')
-   * ```
-   *
-   * Read more in our [docs](https://pris.ly/d/raw-queries).
-   */
-  $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<T>;
-
-
-  /**
    * Allows the running of a sequence of read/write operations that are guaranteed to either succeed or fail as a whole.
    * @example
    * ```
@@ -153,9 +106,24 @@ export class PrismaClient<
    * 
    * Read more in our [docs](https://www.prisma.io/docs/concepts/components/prisma-client/transactions).
    */
-  $transaction<P extends Prisma.PrismaPromise<any>[]>(arg: [...P], options?: { isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<runtime.Types.Utils.UnwrapTuple<P>>
+  $transaction<P extends Prisma.PrismaPromise<any>[]>(arg: [...P]): $Utils.JsPromise<runtime.Types.Utils.UnwrapTuple<P>>
 
-  $transaction<R>(fn: (prisma: Omit<PrismaClient, runtime.ITXClientDenyList>) => $Utils.JsPromise<R>, options?: { maxWait?: number, timeout?: number, isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<R>
+  $transaction<R>(fn: (prisma: Omit<PrismaClient, runtime.ITXClientDenyList>) => $Utils.JsPromise<R>, options?: { maxWait?: number, timeout?: number }): $Utils.JsPromise<R>
+
+  /**
+   * Executes a raw MongoDB command and returns the result of it.
+   * @example
+   * ```
+   * const user = await prisma.$runCommandRaw({
+   *   aggregate: 'User',
+   *   pipeline: [{ $match: { name: 'Bob' } }, { $project: { email: true, _id: false } }],
+   *   explain: false,
+   * })
+   * ```
+   * 
+   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   */
+  $runCommandRaw(command: Prisma.InputJsonObject): Prisma.PrismaPromise<Prisma.JsonObject>
 
   $extends: $Extensions.ExtendsHook<"extends", Prisma.TypeMapCb<ClientOptions>, ExtArgs, $Utils.Call<Prisma.TypeMapCb<ClientOptions>, {
     extArgs: ExtArgs
@@ -260,6 +228,14 @@ export namespace Prisma {
   export type DecimalJsLike = runtime.DecimalJsLike
 
   /**
+   * Metrics
+   */
+  export type Metrics = runtime.Metrics
+  export type Metric<T> = runtime.Metric<T>
+  export type MetricHistogram = runtime.MetricHistogram
+  export type MetricHistogramBucket = runtime.MetricHistogramBucket
+
+  /**
   * Extensions
   */
   export import Extension = $Extensions.UserArgs
@@ -270,12 +246,11 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 7.4.0
-   * Query Engine version: ab56fe763f921d033a6c195e7ddeb3e255bdbb57
+   * Prisma Client JS version: 6.19.2
+   * Query Engine version: c2990dca591cba766e3b7ef5d9e8a84796e47ab7
    */
   export type PrismaVersion = {
     client: string
-    engine: string
   }
 
   export const prismaVersion: PrismaVersion
@@ -665,6 +640,9 @@ export namespace Prisma {
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
 
 
+  export type Datasources = {
+    db?: Datasource
+  }
 
   interface TypeMapCb<ClientOptions = {}> extends $Utils.Fn<{extArgs: $Extensions.InternalArgs }, $Utils.Record<string, any>> {
     returns: Prisma.TypeMap<this['params']['extArgs'], ClientOptions extends { omit: infer OmitOptions } ? OmitOptions : {}>
@@ -676,7 +654,7 @@ export namespace Prisma {
     }
     meta: {
       modelProps: "user" | "conversation" | "message" | "assistant" | "project" | "sharedChat"
-      txIsolationLevel: Prisma.TransactionIsolationLevel
+      txIsolationLevel: never
     }
     model: {
       User: {
@@ -711,10 +689,6 @@ export namespace Prisma {
             args: Prisma.UserCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          createManyAndReturn: {
-            args: Prisma.UserCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UserPayload>[]
-          }
           delete: {
             args: Prisma.UserDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$UserPayload>
@@ -731,10 +705,6 @@ export namespace Prisma {
             args: Prisma.UserUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          updateManyAndReturn: {
-            args: Prisma.UserUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UserPayload>[]
-          }
           upsert: {
             args: Prisma.UserUpsertArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$UserPayload>
@@ -746,6 +716,14 @@ export namespace Prisma {
           groupBy: {
             args: Prisma.UserGroupByArgs<ExtArgs>
             result: $Utils.Optional<UserGroupByOutputType>[]
+          }
+          findRaw: {
+            args: Prisma.UserFindRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          aggregateRaw: {
+            args: Prisma.UserAggregateRawArgs<ExtArgs>
+            result: JsonObject
           }
           count: {
             args: Prisma.UserCountArgs<ExtArgs>
@@ -785,10 +763,6 @@ export namespace Prisma {
             args: Prisma.ConversationCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          createManyAndReturn: {
-            args: Prisma.ConversationCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ConversationPayload>[]
-          }
           delete: {
             args: Prisma.ConversationDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ConversationPayload>
@@ -805,10 +779,6 @@ export namespace Prisma {
             args: Prisma.ConversationUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          updateManyAndReturn: {
-            args: Prisma.ConversationUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ConversationPayload>[]
-          }
           upsert: {
             args: Prisma.ConversationUpsertArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ConversationPayload>
@@ -820,6 +790,14 @@ export namespace Prisma {
           groupBy: {
             args: Prisma.ConversationGroupByArgs<ExtArgs>
             result: $Utils.Optional<ConversationGroupByOutputType>[]
+          }
+          findRaw: {
+            args: Prisma.ConversationFindRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          aggregateRaw: {
+            args: Prisma.ConversationAggregateRawArgs<ExtArgs>
+            result: JsonObject
           }
           count: {
             args: Prisma.ConversationCountArgs<ExtArgs>
@@ -859,10 +837,6 @@ export namespace Prisma {
             args: Prisma.MessageCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          createManyAndReturn: {
-            args: Prisma.MessageCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MessagePayload>[]
-          }
           delete: {
             args: Prisma.MessageDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$MessagePayload>
@@ -879,10 +853,6 @@ export namespace Prisma {
             args: Prisma.MessageUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          updateManyAndReturn: {
-            args: Prisma.MessageUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MessagePayload>[]
-          }
           upsert: {
             args: Prisma.MessageUpsertArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$MessagePayload>
@@ -894,6 +864,14 @@ export namespace Prisma {
           groupBy: {
             args: Prisma.MessageGroupByArgs<ExtArgs>
             result: $Utils.Optional<MessageGroupByOutputType>[]
+          }
+          findRaw: {
+            args: Prisma.MessageFindRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          aggregateRaw: {
+            args: Prisma.MessageAggregateRawArgs<ExtArgs>
+            result: JsonObject
           }
           count: {
             args: Prisma.MessageCountArgs<ExtArgs>
@@ -933,10 +911,6 @@ export namespace Prisma {
             args: Prisma.AssistantCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          createManyAndReturn: {
-            args: Prisma.AssistantCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$AssistantPayload>[]
-          }
           delete: {
             args: Prisma.AssistantDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$AssistantPayload>
@@ -953,10 +927,6 @@ export namespace Prisma {
             args: Prisma.AssistantUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          updateManyAndReturn: {
-            args: Prisma.AssistantUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$AssistantPayload>[]
-          }
           upsert: {
             args: Prisma.AssistantUpsertArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$AssistantPayload>
@@ -968,6 +938,14 @@ export namespace Prisma {
           groupBy: {
             args: Prisma.AssistantGroupByArgs<ExtArgs>
             result: $Utils.Optional<AssistantGroupByOutputType>[]
+          }
+          findRaw: {
+            args: Prisma.AssistantFindRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          aggregateRaw: {
+            args: Prisma.AssistantAggregateRawArgs<ExtArgs>
+            result: JsonObject
           }
           count: {
             args: Prisma.AssistantCountArgs<ExtArgs>
@@ -1007,10 +985,6 @@ export namespace Prisma {
             args: Prisma.ProjectCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          createManyAndReturn: {
-            args: Prisma.ProjectCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ProjectPayload>[]
-          }
           delete: {
             args: Prisma.ProjectDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ProjectPayload>
@@ -1027,10 +1001,6 @@ export namespace Prisma {
             args: Prisma.ProjectUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          updateManyAndReturn: {
-            args: Prisma.ProjectUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$ProjectPayload>[]
-          }
           upsert: {
             args: Prisma.ProjectUpsertArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$ProjectPayload>
@@ -1042,6 +1012,14 @@ export namespace Prisma {
           groupBy: {
             args: Prisma.ProjectGroupByArgs<ExtArgs>
             result: $Utils.Optional<ProjectGroupByOutputType>[]
+          }
+          findRaw: {
+            args: Prisma.ProjectFindRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          aggregateRaw: {
+            args: Prisma.ProjectAggregateRawArgs<ExtArgs>
+            result: JsonObject
           }
           count: {
             args: Prisma.ProjectCountArgs<ExtArgs>
@@ -1081,10 +1059,6 @@ export namespace Prisma {
             args: Prisma.SharedChatCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          createManyAndReturn: {
-            args: Prisma.SharedChatCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SharedChatPayload>[]
-          }
           delete: {
             args: Prisma.SharedChatDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SharedChatPayload>
@@ -1101,10 +1075,6 @@ export namespace Prisma {
             args: Prisma.SharedChatUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
-          updateManyAndReturn: {
-            args: Prisma.SharedChatUpdateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SharedChatPayload>[]
-          }
           upsert: {
             args: Prisma.SharedChatUpsertArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SharedChatPayload>
@@ -1117,6 +1087,14 @@ export namespace Prisma {
             args: Prisma.SharedChatGroupByArgs<ExtArgs>
             result: $Utils.Optional<SharedChatGroupByOutputType>[]
           }
+          findRaw: {
+            args: Prisma.SharedChatFindRawArgs<ExtArgs>
+            result: JsonObject
+          }
+          aggregateRaw: {
+            args: Prisma.SharedChatAggregateRawArgs<ExtArgs>
+            result: JsonObject
+          }
           count: {
             args: Prisma.SharedChatCountArgs<ExtArgs>
             result: $Utils.Optional<SharedChatCountAggregateOutputType> | number
@@ -1128,21 +1106,9 @@ export namespace Prisma {
     other: {
       payload: any
       operations: {
-        $executeRaw: {
-          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
-          result: any
-        }
-        $executeRawUnsafe: {
-          args: [query: string, ...values: any[]],
-          result: any
-        }
-        $queryRaw: {
-          args: [query: TemplateStringsArray | Prisma.Sql, ...values: any[]],
-          result: any
-        }
-        $queryRawUnsafe: {
-          args: [query: string, ...values: any[]],
-          result: any
+        $runCommandRaw: {
+          args: Prisma.InputJsonObject,
+          result: Prisma.JsonObject
         }
       }
     }
@@ -1151,6 +1117,14 @@ export namespace Prisma {
   export type DefaultPrismaClient = PrismaClient
   export type ErrorFormat = 'pretty' | 'colorless' | 'minimal'
   export interface PrismaClientOptions {
+    /**
+     * Overwrites the datasource url from your schema.prisma file
+     */
+    datasources?: Datasources
+    /**
+     * Overwrites the datasource url from your schema.prisma file
+     */
+    datasourceUrl?: string
     /**
      * @default "colorless"
      */
@@ -1177,7 +1151,7 @@ export namespace Prisma {
      *  { emit: 'stdout', level: 'error' }
      * 
      * ```
-     * Read more in our [docs](https://pris.ly/d/logging).
+     * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
      */
     log?: (LogLevel | LogDefinition)[]
     /**
@@ -1188,16 +1162,7 @@ export namespace Prisma {
     transactionOptions?: {
       maxWait?: number
       timeout?: number
-      isolationLevel?: Prisma.TransactionIsolationLevel
     }
-    /**
-     * Instance of a Driver Adapter, e.g., like one provided by `@prisma/adapter-planetscale`
-     */
-    adapter?: runtime.SqlDriverAdapterFactory
-    /**
-     * Prisma Accelerate URL allowing the client to connect through Accelerate instead of a direct database.
-     */
-    accelerateUrl?: string
     /**
      * Global configuration for omitting model fields by default.
      * 
@@ -1213,22 +1178,6 @@ export namespace Prisma {
      * ```
      */
     omit?: Prisma.GlobalOmitConfig
-    /**
-     * SQL commenter plugins that add metadata to SQL queries as comments.
-     * Comments follow the sqlcommenter format: https://google.github.io/sqlcommenter/
-     * 
-     * @example
-     * ```
-     * const prisma = new PrismaClient({
-     *   adapter,
-     *   comments: [
-     *     traceContext(),
-     *     queryInsights(),
-     *   ],
-     * })
-     * ```
-     */
-    comments?: runtime.SqlCommenterPlugin[]
   }
   export type GlobalOmitConfig = {
     user?: UserOmit
@@ -1632,25 +1581,7 @@ export namespace Prisma {
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["user"]>
 
-  export type UserSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    email?: boolean
-    name?: boolean
-    password?: boolean
-    avatar?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["user"]>
 
-  export type UserSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    email?: boolean
-    name?: boolean
-    password?: boolean
-    avatar?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["user"]>
 
   export type UserSelectScalar = {
     id?: boolean
@@ -1670,8 +1601,6 @@ export namespace Prisma {
     sharedChats?: boolean | User$sharedChatsArgs<ExtArgs>
     _count?: boolean | UserCountOutputTypeDefaultArgs<ExtArgs>
   }
-  export type UserIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
-  export type UserIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
 
   export type $UserPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "User"
@@ -1807,30 +1736,6 @@ export namespace Prisma {
     createMany<T extends UserCreateManyArgs>(args?: SelectSubset<T, UserCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Users and returns the data saved in the database.
-     * @param {UserCreateManyAndReturnArgs} args - Arguments to create many Users.
-     * @example
-     * // Create many Users
-     * const user = await prisma.user.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many Users and only return the `id`
-     * const userWithIdOnly = await prisma.user.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends UserCreateManyAndReturnArgs>(args?: SelectSubset<T, UserCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Delete a User.
      * @param {UserDeleteArgs} args - Arguments to delete one User.
      * @example
@@ -1895,36 +1800,6 @@ export namespace Prisma {
     updateMany<T extends UserUpdateManyArgs>(args: SelectSubset<T, UserUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Users and returns the data updated in the database.
-     * @param {UserUpdateManyAndReturnArgs} args - Arguments to update many Users.
-     * @example
-     * // Update many Users
-     * const user = await prisma.user.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more Users and only return the `id`
-     * const userWithIdOnly = await prisma.user.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends UserUpdateManyAndReturnArgs>(args: SelectSubset<T, UserUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Create or update one User.
      * @param {UserUpsertArgs} args - Arguments to update or create a User.
      * @example
@@ -1942,6 +1817,29 @@ export namespace Prisma {
      * })
      */
     upsert<T extends UserUpsertArgs>(args: SelectSubset<T, UserUpsertArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Users that matches the filter.
+     * @param {UserFindRawArgs} args - Select which filters you would like to apply.
+     * @example
+     * const user = await prisma.user.findRaw({
+     *   filter: { age: { $gt: 25 } }
+     * })
+     */
+    findRaw(args?: UserFindRawArgs): Prisma.PrismaPromise<JsonObject>
+
+    /**
+     * Perform aggregation operations on a User.
+     * @param {UserAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * @example
+     * const user = await prisma.user.aggregateRaw({
+     *   pipeline: [
+     *     { $match: { status: "registered" } },
+     *     { $group: { _id: "$country", total: { $sum: 1 } } }
+     *   ]
+     * })
+     */
+    aggregateRaw(args?: UserAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
 
 
     /**
@@ -2352,26 +2250,6 @@ export namespace Prisma {
      * The data used to create many Users.
      */
     data: UserCreateManyInput | UserCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * User createManyAndReturn
-   */
-  export type UserCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the User
-     */
-    select?: UserSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the User
-     */
-    omit?: UserOmit<ExtArgs> | null
-    /**
-     * The data used to create many Users.
-     */
-    data: UserCreateManyInput | UserCreateManyInput[]
-    skipDuplicates?: boolean
   }
 
   /**
@@ -2404,32 +2282,6 @@ export namespace Prisma {
    * User updateMany
    */
   export type UserUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update Users.
-     */
-    data: XOR<UserUpdateManyMutationInput, UserUncheckedUpdateManyInput>
-    /**
-     * Filter which Users to update
-     */
-    where?: UserWhereInput
-    /**
-     * Limit how many Users to update.
-     */
-    limit?: number
-  }
-
-  /**
-   * User updateManyAndReturn
-   */
-  export type UserUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the User
-     */
-    select?: UserSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the User
-     */
-    omit?: UserOmit<ExtArgs> | null
     /**
      * The data used to update Users.
      */
@@ -2508,6 +2360,34 @@ export namespace Prisma {
      * Limit how many Users to delete.
      */
     limit?: number
+  }
+
+  /**
+   * User findRaw
+   */
+  export type UserFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
+     */
+    filter?: InputJsonValue
+    /**
+     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * User aggregateRaw
+   */
+  export type UserAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
+     */
+    pipeline?: InputJsonValue[]
+    /**
+     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
   }
 
   /**
@@ -2848,39 +2728,7 @@ export namespace Prisma {
     _count?: boolean | ConversationCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["conversation"]>
 
-  export type ConversationSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    title?: boolean
-    modelId?: boolean
-    modelName?: boolean
-    isPinned?: boolean
-    assistantId?: boolean
-    isLocked?: boolean
-    activePath?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    userId?: boolean
-    projectId?: boolean
-    user?: boolean | UserDefaultArgs<ExtArgs>
-    project?: boolean | Conversation$projectArgs<ExtArgs>
-  }, ExtArgs["result"]["conversation"]>
 
-  export type ConversationSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    title?: boolean
-    modelId?: boolean
-    modelName?: boolean
-    isPinned?: boolean
-    assistantId?: boolean
-    isLocked?: boolean
-    activePath?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    userId?: boolean
-    projectId?: boolean
-    user?: boolean | UserDefaultArgs<ExtArgs>
-    project?: boolean | Conversation$projectArgs<ExtArgs>
-  }, ExtArgs["result"]["conversation"]>
 
   export type ConversationSelectScalar = {
     id?: boolean
@@ -2904,14 +2752,6 @@ export namespace Prisma {
     messages?: boolean | Conversation$messagesArgs<ExtArgs>
     SharedChat?: boolean | Conversation$SharedChatArgs<ExtArgs>
     _count?: boolean | ConversationCountOutputTypeDefaultArgs<ExtArgs>
-  }
-  export type ConversationIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | UserDefaultArgs<ExtArgs>
-    project?: boolean | Conversation$projectArgs<ExtArgs>
-  }
-  export type ConversationIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | UserDefaultArgs<ExtArgs>
-    project?: boolean | Conversation$projectArgs<ExtArgs>
   }
 
   export type $ConversationPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -3053,30 +2893,6 @@ export namespace Prisma {
     createMany<T extends ConversationCreateManyArgs>(args?: SelectSubset<T, ConversationCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Conversations and returns the data saved in the database.
-     * @param {ConversationCreateManyAndReturnArgs} args - Arguments to create many Conversations.
-     * @example
-     * // Create many Conversations
-     * const conversation = await prisma.conversation.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many Conversations and only return the `id`
-     * const conversationWithIdOnly = await prisma.conversation.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends ConversationCreateManyAndReturnArgs>(args?: SelectSubset<T, ConversationCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConversationPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Delete a Conversation.
      * @param {ConversationDeleteArgs} args - Arguments to delete one Conversation.
      * @example
@@ -3141,36 +2957,6 @@ export namespace Prisma {
     updateMany<T extends ConversationUpdateManyArgs>(args: SelectSubset<T, ConversationUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Conversations and returns the data updated in the database.
-     * @param {ConversationUpdateManyAndReturnArgs} args - Arguments to update many Conversations.
-     * @example
-     * // Update many Conversations
-     * const conversation = await prisma.conversation.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more Conversations and only return the `id`
-     * const conversationWithIdOnly = await prisma.conversation.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends ConversationUpdateManyAndReturnArgs>(args: SelectSubset<T, ConversationUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConversationPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Create or update one Conversation.
      * @param {ConversationUpsertArgs} args - Arguments to update or create a Conversation.
      * @example
@@ -3188,6 +2974,29 @@ export namespace Prisma {
      * })
      */
     upsert<T extends ConversationUpsertArgs>(args: SelectSubset<T, ConversationUpsertArgs<ExtArgs>>): Prisma__ConversationClient<$Result.GetResult<Prisma.$ConversationPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Conversations that matches the filter.
+     * @param {ConversationFindRawArgs} args - Select which filters you would like to apply.
+     * @example
+     * const conversation = await prisma.conversation.findRaw({
+     *   filter: { age: { $gt: 25 } }
+     * })
+     */
+    findRaw(args?: ConversationFindRawArgs): Prisma.PrismaPromise<JsonObject>
+
+    /**
+     * Perform aggregation operations on a Conversation.
+     * @param {ConversationAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * @example
+     * const conversation = await prisma.conversation.aggregateRaw({
+     *   pipeline: [
+     *     { $match: { status: "registered" } },
+     *     { $group: { _id: "$country", total: { $sum: 1 } } }
+     *   ]
+     * })
+     */
+    aggregateRaw(args?: ConversationAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
 
 
     /**
@@ -3603,30 +3412,6 @@ export namespace Prisma {
      * The data used to create many Conversations.
      */
     data: ConversationCreateManyInput | ConversationCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * Conversation createManyAndReturn
-   */
-  export type ConversationCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Conversation
-     */
-    select?: ConversationSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Conversation
-     */
-    omit?: ConversationOmit<ExtArgs> | null
-    /**
-     * The data used to create many Conversations.
-     */
-    data: ConversationCreateManyInput | ConversationCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ConversationIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -3671,36 +3456,6 @@ export namespace Prisma {
      * Limit how many Conversations to update.
      */
     limit?: number
-  }
-
-  /**
-   * Conversation updateManyAndReturn
-   */
-  export type ConversationUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Conversation
-     */
-    select?: ConversationSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Conversation
-     */
-    omit?: ConversationOmit<ExtArgs> | null
-    /**
-     * The data used to update Conversations.
-     */
-    data: XOR<ConversationUpdateManyMutationInput, ConversationUncheckedUpdateManyInput>
-    /**
-     * Filter which Conversations to update
-     */
-    where?: ConversationWhereInput
-    /**
-     * Limit how many Conversations to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ConversationIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -3767,6 +3522,34 @@ export namespace Prisma {
      * Limit how many Conversations to delete.
      */
     limit?: number
+  }
+
+  /**
+   * Conversation findRaw
+   */
+  export type ConversationFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
+     */
+    filter?: InputJsonValue
+    /**
+     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * Conversation aggregateRaw
+   */
+  export type ConversationAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
+     */
+    pipeline?: InputJsonValue[]
+    /**
+     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
   }
 
   /**
@@ -4120,41 +3903,7 @@ export namespace Prisma {
     conversation?: boolean | ConversationDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["message"]>
 
-  export type MessageSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    role?: boolean
-    content?: boolean
-    reasoning?: boolean
-    modelName?: boolean
-    parentId?: boolean
-    siblingIds?: boolean
-    version?: boolean
-    attachmentName?: boolean
-    attachmentType?: boolean
-    sources?: boolean
-    rating?: boolean
-    createdAt?: boolean
-    conversationId?: boolean
-    conversation?: boolean | ConversationDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["message"]>
 
-  export type MessageSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    role?: boolean
-    content?: boolean
-    reasoning?: boolean
-    modelName?: boolean
-    parentId?: boolean
-    siblingIds?: boolean
-    version?: boolean
-    attachmentName?: boolean
-    attachmentType?: boolean
-    sources?: boolean
-    rating?: boolean
-    createdAt?: boolean
-    conversationId?: boolean
-    conversation?: boolean | ConversationDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["message"]>
 
   export type MessageSelectScalar = {
     id?: boolean
@@ -4175,12 +3924,6 @@ export namespace Prisma {
 
   export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "role" | "content" | "reasoning" | "modelName" | "parentId" | "siblingIds" | "version" | "attachmentName" | "attachmentType" | "sources" | "rating" | "createdAt" | "conversationId", ExtArgs["result"]["message"]>
   export type MessageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    conversation?: boolean | ConversationDefaultArgs<ExtArgs>
-  }
-  export type MessageIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    conversation?: boolean | ConversationDefaultArgs<ExtArgs>
-  }
-  export type MessageIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     conversation?: boolean | ConversationDefaultArgs<ExtArgs>
   }
 
@@ -4322,30 +4065,6 @@ export namespace Prisma {
     createMany<T extends MessageCreateManyArgs>(args?: SelectSubset<T, MessageCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Messages and returns the data saved in the database.
-     * @param {MessageCreateManyAndReturnArgs} args - Arguments to create many Messages.
-     * @example
-     * // Create many Messages
-     * const message = await prisma.message.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many Messages and only return the `id`
-     * const messageWithIdOnly = await prisma.message.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends MessageCreateManyAndReturnArgs>(args?: SelectSubset<T, MessageCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Delete a Message.
      * @param {MessageDeleteArgs} args - Arguments to delete one Message.
      * @example
@@ -4410,36 +4129,6 @@ export namespace Prisma {
     updateMany<T extends MessageUpdateManyArgs>(args: SelectSubset<T, MessageUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Messages and returns the data updated in the database.
-     * @param {MessageUpdateManyAndReturnArgs} args - Arguments to update many Messages.
-     * @example
-     * // Update many Messages
-     * const message = await prisma.message.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more Messages and only return the `id`
-     * const messageWithIdOnly = await prisma.message.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends MessageUpdateManyAndReturnArgs>(args: SelectSubset<T, MessageUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Create or update one Message.
      * @param {MessageUpsertArgs} args - Arguments to update or create a Message.
      * @example
@@ -4457,6 +4146,29 @@ export namespace Prisma {
      * })
      */
     upsert<T extends MessageUpsertArgs>(args: SelectSubset<T, MessageUpsertArgs<ExtArgs>>): Prisma__MessageClient<$Result.GetResult<Prisma.$MessagePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Messages that matches the filter.
+     * @param {MessageFindRawArgs} args - Select which filters you would like to apply.
+     * @example
+     * const message = await prisma.message.findRaw({
+     *   filter: { age: { $gt: 25 } }
+     * })
+     */
+    findRaw(args?: MessageFindRawArgs): Prisma.PrismaPromise<JsonObject>
+
+    /**
+     * Perform aggregation operations on a Message.
+     * @param {MessageAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * @example
+     * const message = await prisma.message.aggregateRaw({
+     *   pipeline: [
+     *     { $match: { status: "registered" } },
+     *     { $group: { _id: "$country", total: { $sum: 1 } } }
+     *   ]
+     * })
+     */
+    aggregateRaw(args?: MessageAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
 
 
     /**
@@ -4871,30 +4583,6 @@ export namespace Prisma {
      * The data used to create many Messages.
      */
     data: MessageCreateManyInput | MessageCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * Message createManyAndReturn
-   */
-  export type MessageCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Message
-     */
-    select?: MessageSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Message
-     */
-    omit?: MessageOmit<ExtArgs> | null
-    /**
-     * The data used to create many Messages.
-     */
-    data: MessageCreateManyInput | MessageCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MessageIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -4939,36 +4627,6 @@ export namespace Prisma {
      * Limit how many Messages to update.
      */
     limit?: number
-  }
-
-  /**
-   * Message updateManyAndReturn
-   */
-  export type MessageUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Message
-     */
-    select?: MessageSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Message
-     */
-    omit?: MessageOmit<ExtArgs> | null
-    /**
-     * The data used to update Messages.
-     */
-    data: XOR<MessageUpdateManyMutationInput, MessageUncheckedUpdateManyInput>
-    /**
-     * Filter which Messages to update
-     */
-    where?: MessageWhereInput
-    /**
-     * Limit how many Messages to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: MessageIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -5035,6 +4693,34 @@ export namespace Prisma {
      * Limit how many Messages to delete.
      */
     limit?: number
+  }
+
+  /**
+   * Message findRaw
+   */
+  export type MessageFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
+     */
+    filter?: InputJsonValue
+    /**
+     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * Message aggregateRaw
+   */
+  export type MessageAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
+     */
+    pipeline?: InputJsonValue[]
+    /**
+     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
   }
 
   /**
@@ -5321,41 +5007,7 @@ export namespace Prisma {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["assistant"]>
 
-  export type AssistantSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    name?: boolean
-    description?: boolean
-    instructions?: boolean
-    model?: boolean
-    temperature?: boolean
-    icon?: boolean
-    color?: boolean
-    actions?: boolean
-    models?: boolean
-    isPublic?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    userId?: boolean
-    user?: boolean | UserDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["assistant"]>
 
-  export type AssistantSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    name?: boolean
-    description?: boolean
-    instructions?: boolean
-    model?: boolean
-    temperature?: boolean
-    icon?: boolean
-    color?: boolean
-    actions?: boolean
-    models?: boolean
-    isPublic?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    userId?: boolean
-    user?: boolean | UserDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["assistant"]>
 
   export type AssistantSelectScalar = {
     id?: boolean
@@ -5376,12 +5028,6 @@ export namespace Prisma {
 
   export type AssistantOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "description" | "instructions" | "model" | "temperature" | "icon" | "color" | "actions" | "models" | "isPublic" | "createdAt" | "updatedAt" | "userId", ExtArgs["result"]["assistant"]>
   export type AssistantInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | UserDefaultArgs<ExtArgs>
-  }
-  export type AssistantIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | UserDefaultArgs<ExtArgs>
-  }
-  export type AssistantIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
   }
 
@@ -5523,30 +5169,6 @@ export namespace Prisma {
     createMany<T extends AssistantCreateManyArgs>(args?: SelectSubset<T, AssistantCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Assistants and returns the data saved in the database.
-     * @param {AssistantCreateManyAndReturnArgs} args - Arguments to create many Assistants.
-     * @example
-     * // Create many Assistants
-     * const assistant = await prisma.assistant.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many Assistants and only return the `id`
-     * const assistantWithIdOnly = await prisma.assistant.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends AssistantCreateManyAndReturnArgs>(args?: SelectSubset<T, AssistantCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AssistantPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Delete a Assistant.
      * @param {AssistantDeleteArgs} args - Arguments to delete one Assistant.
      * @example
@@ -5611,36 +5233,6 @@ export namespace Prisma {
     updateMany<T extends AssistantUpdateManyArgs>(args: SelectSubset<T, AssistantUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Assistants and returns the data updated in the database.
-     * @param {AssistantUpdateManyAndReturnArgs} args - Arguments to update many Assistants.
-     * @example
-     * // Update many Assistants
-     * const assistant = await prisma.assistant.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more Assistants and only return the `id`
-     * const assistantWithIdOnly = await prisma.assistant.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends AssistantUpdateManyAndReturnArgs>(args: SelectSubset<T, AssistantUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AssistantPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Create or update one Assistant.
      * @param {AssistantUpsertArgs} args - Arguments to update or create a Assistant.
      * @example
@@ -5658,6 +5250,29 @@ export namespace Prisma {
      * })
      */
     upsert<T extends AssistantUpsertArgs>(args: SelectSubset<T, AssistantUpsertArgs<ExtArgs>>): Prisma__AssistantClient<$Result.GetResult<Prisma.$AssistantPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Assistants that matches the filter.
+     * @param {AssistantFindRawArgs} args - Select which filters you would like to apply.
+     * @example
+     * const assistant = await prisma.assistant.findRaw({
+     *   filter: { age: { $gt: 25 } }
+     * })
+     */
+    findRaw(args?: AssistantFindRawArgs): Prisma.PrismaPromise<JsonObject>
+
+    /**
+     * Perform aggregation operations on a Assistant.
+     * @param {AssistantAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * @example
+     * const assistant = await prisma.assistant.aggregateRaw({
+     *   pipeline: [
+     *     { $match: { status: "registered" } },
+     *     { $group: { _id: "$country", total: { $sum: 1 } } }
+     *   ]
+     * })
+     */
+    aggregateRaw(args?: AssistantAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
 
 
     /**
@@ -6072,30 +5687,6 @@ export namespace Prisma {
      * The data used to create many Assistants.
      */
     data: AssistantCreateManyInput | AssistantCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * Assistant createManyAndReturn
-   */
-  export type AssistantCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Assistant
-     */
-    select?: AssistantSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Assistant
-     */
-    omit?: AssistantOmit<ExtArgs> | null
-    /**
-     * The data used to create many Assistants.
-     */
-    data: AssistantCreateManyInput | AssistantCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: AssistantIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -6140,36 +5731,6 @@ export namespace Prisma {
      * Limit how many Assistants to update.
      */
     limit?: number
-  }
-
-  /**
-   * Assistant updateManyAndReturn
-   */
-  export type AssistantUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Assistant
-     */
-    select?: AssistantSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Assistant
-     */
-    omit?: AssistantOmit<ExtArgs> | null
-    /**
-     * The data used to update Assistants.
-     */
-    data: XOR<AssistantUpdateManyMutationInput, AssistantUncheckedUpdateManyInput>
-    /**
-     * Filter which Assistants to update
-     */
-    where?: AssistantWhereInput
-    /**
-     * Limit how many Assistants to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: AssistantIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -6236,6 +5797,34 @@ export namespace Prisma {
      * Limit how many Assistants to delete.
      */
     limit?: number
+  }
+
+  /**
+   * Assistant findRaw
+   */
+  export type AssistantFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
+     */
+    filter?: InputJsonValue
+    /**
+     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * Assistant aggregateRaw
+   */
+  export type AssistantAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
+     */
+    pipeline?: InputJsonValue[]
+    /**
+     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
   }
 
   /**
@@ -6458,33 +6047,7 @@ export namespace Prisma {
     _count?: boolean | ProjectCountOutputTypeDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["project"]>
 
-  export type ProjectSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    name?: boolean
-    instructions?: boolean
-    color?: boolean
-    icon?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    userId?: boolean
-    chatIds?: boolean
-    chatDetails?: boolean
-    user?: boolean | UserDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["project"]>
 
-  export type ProjectSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    name?: boolean
-    instructions?: boolean
-    color?: boolean
-    icon?: boolean
-    createdAt?: boolean
-    updatedAt?: boolean
-    userId?: boolean
-    chatIds?: boolean
-    chatDetails?: boolean
-    user?: boolean | UserDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["project"]>
 
   export type ProjectSelectScalar = {
     id?: boolean
@@ -6504,12 +6067,6 @@ export namespace Prisma {
     user?: boolean | UserDefaultArgs<ExtArgs>
     conversations?: boolean | Project$conversationsArgs<ExtArgs>
     _count?: boolean | ProjectCountOutputTypeDefaultArgs<ExtArgs>
-  }
-  export type ProjectIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | UserDefaultArgs<ExtArgs>
-  }
-  export type ProjectIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    user?: boolean | UserDefaultArgs<ExtArgs>
   }
 
   export type $ProjectPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -6647,30 +6204,6 @@ export namespace Prisma {
     createMany<T extends ProjectCreateManyArgs>(args?: SelectSubset<T, ProjectCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many Projects and returns the data saved in the database.
-     * @param {ProjectCreateManyAndReturnArgs} args - Arguments to create many Projects.
-     * @example
-     * // Create many Projects
-     * const project = await prisma.project.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many Projects and only return the `id`
-     * const projectWithIdOnly = await prisma.project.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends ProjectCreateManyAndReturnArgs>(args?: SelectSubset<T, ProjectCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Delete a Project.
      * @param {ProjectDeleteArgs} args - Arguments to delete one Project.
      * @example
@@ -6735,36 +6268,6 @@ export namespace Prisma {
     updateMany<T extends ProjectUpdateManyArgs>(args: SelectSubset<T, ProjectUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more Projects and returns the data updated in the database.
-     * @param {ProjectUpdateManyAndReturnArgs} args - Arguments to update many Projects.
-     * @example
-     * // Update many Projects
-     * const project = await prisma.project.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more Projects and only return the `id`
-     * const projectWithIdOnly = await prisma.project.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends ProjectUpdateManyAndReturnArgs>(args: SelectSubset<T, ProjectUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Create or update one Project.
      * @param {ProjectUpsertArgs} args - Arguments to update or create a Project.
      * @example
@@ -6782,6 +6285,29 @@ export namespace Prisma {
      * })
      */
     upsert<T extends ProjectUpsertArgs>(args: SelectSubset<T, ProjectUpsertArgs<ExtArgs>>): Prisma__ProjectClient<$Result.GetResult<Prisma.$ProjectPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more Projects that matches the filter.
+     * @param {ProjectFindRawArgs} args - Select which filters you would like to apply.
+     * @example
+     * const project = await prisma.project.findRaw({
+     *   filter: { age: { $gt: 25 } }
+     * })
+     */
+    findRaw(args?: ProjectFindRawArgs): Prisma.PrismaPromise<JsonObject>
+
+    /**
+     * Perform aggregation operations on a Project.
+     * @param {ProjectAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * @example
+     * const project = await prisma.project.aggregateRaw({
+     *   pipeline: [
+     *     { $match: { status: "registered" } },
+     *     { $group: { _id: "$country", total: { $sum: 1 } } }
+     *   ]
+     * })
+     */
+    aggregateRaw(args?: ProjectAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
 
 
     /**
@@ -7193,30 +6719,6 @@ export namespace Prisma {
      * The data used to create many Projects.
      */
     data: ProjectCreateManyInput | ProjectCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * Project createManyAndReturn
-   */
-  export type ProjectCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Project
-     */
-    select?: ProjectSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Project
-     */
-    omit?: ProjectOmit<ExtArgs> | null
-    /**
-     * The data used to create many Projects.
-     */
-    data: ProjectCreateManyInput | ProjectCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ProjectIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -7261,36 +6763,6 @@ export namespace Prisma {
      * Limit how many Projects to update.
      */
     limit?: number
-  }
-
-  /**
-   * Project updateManyAndReturn
-   */
-  export type ProjectUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the Project
-     */
-    select?: ProjectSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the Project
-     */
-    omit?: ProjectOmit<ExtArgs> | null
-    /**
-     * The data used to update Projects.
-     */
-    data: XOR<ProjectUpdateManyMutationInput, ProjectUncheckedUpdateManyInput>
-    /**
-     * Filter which Projects to update
-     */
-    where?: ProjectWhereInput
-    /**
-     * Limit how many Projects to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: ProjectIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -7357,6 +6829,34 @@ export namespace Prisma {
      * Limit how many Projects to delete.
      */
     limit?: number
+  }
+
+  /**
+   * Project findRaw
+   */
+  export type ProjectFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
+     */
+    filter?: InputJsonValue
+    /**
+     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * Project aggregateRaw
+   */
+  export type ProjectAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
+     */
+    pipeline?: InputJsonValue[]
+    /**
+     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
   }
 
   /**
@@ -7602,33 +7102,7 @@ export namespace Prisma {
     conversation?: boolean | ConversationDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["sharedChat"]>
 
-  export type SharedChatSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    shareToken?: boolean
-    isPublic?: boolean
-    isUsed?: boolean
-    usedBy?: boolean
-    expiresAt?: boolean
-    creatorId?: boolean
-    createdAt?: boolean
-    conversationId?: boolean
-    creator?: boolean | UserDefaultArgs<ExtArgs>
-    conversation?: boolean | ConversationDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["sharedChat"]>
 
-  export type SharedChatSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    id?: boolean
-    shareToken?: boolean
-    isPublic?: boolean
-    isUsed?: boolean
-    usedBy?: boolean
-    expiresAt?: boolean
-    creatorId?: boolean
-    createdAt?: boolean
-    conversationId?: boolean
-    creator?: boolean | UserDefaultArgs<ExtArgs>
-    conversation?: boolean | ConversationDefaultArgs<ExtArgs>
-  }, ExtArgs["result"]["sharedChat"]>
 
   export type SharedChatSelectScalar = {
     id?: boolean
@@ -7644,14 +7118,6 @@ export namespace Prisma {
 
   export type SharedChatOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "shareToken" | "isPublic" | "isUsed" | "usedBy" | "expiresAt" | "creatorId" | "createdAt" | "conversationId", ExtArgs["result"]["sharedChat"]>
   export type SharedChatInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    creator?: boolean | UserDefaultArgs<ExtArgs>
-    conversation?: boolean | ConversationDefaultArgs<ExtArgs>
-  }
-  export type SharedChatIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    creator?: boolean | UserDefaultArgs<ExtArgs>
-    conversation?: boolean | ConversationDefaultArgs<ExtArgs>
-  }
-  export type SharedChatIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     creator?: boolean | UserDefaultArgs<ExtArgs>
     conversation?: boolean | ConversationDefaultArgs<ExtArgs>
   }
@@ -7790,30 +7256,6 @@ export namespace Prisma {
     createMany<T extends SharedChatCreateManyArgs>(args?: SelectSubset<T, SharedChatCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Create many SharedChats and returns the data saved in the database.
-     * @param {SharedChatCreateManyAndReturnArgs} args - Arguments to create many SharedChats.
-     * @example
-     * // Create many SharedChats
-     * const sharedChat = await prisma.sharedChat.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many SharedChats and only return the `id`
-     * const sharedChatWithIdOnly = await prisma.sharedChat.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends SharedChatCreateManyAndReturnArgs>(args?: SelectSubset<T, SharedChatCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SharedChatPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Delete a SharedChat.
      * @param {SharedChatDeleteArgs} args - Arguments to delete one SharedChat.
      * @example
@@ -7878,36 +7320,6 @@ export namespace Prisma {
     updateMany<T extends SharedChatUpdateManyArgs>(args: SelectSubset<T, SharedChatUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
 
     /**
-     * Update zero or more SharedChats and returns the data updated in the database.
-     * @param {SharedChatUpdateManyAndReturnArgs} args - Arguments to update many SharedChats.
-     * @example
-     * // Update many SharedChats
-     * const sharedChat = await prisma.sharedChat.updateManyAndReturn({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Update zero or more SharedChats and only return the `id`
-     * const sharedChatWithIdOnly = await prisma.sharedChat.updateManyAndReturn({
-     *   select: { id: true },
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    updateManyAndReturn<T extends SharedChatUpdateManyAndReturnArgs>(args: SelectSubset<T, SharedChatUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SharedChatPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
-
-    /**
      * Create or update one SharedChat.
      * @param {SharedChatUpsertArgs} args - Arguments to update or create a SharedChat.
      * @example
@@ -7925,6 +7337,29 @@ export namespace Prisma {
      * })
      */
     upsert<T extends SharedChatUpsertArgs>(args: SelectSubset<T, SharedChatUpsertArgs<ExtArgs>>): Prisma__SharedChatClient<$Result.GetResult<Prisma.$SharedChatPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SharedChats that matches the filter.
+     * @param {SharedChatFindRawArgs} args - Select which filters you would like to apply.
+     * @example
+     * const sharedChat = await prisma.sharedChat.findRaw({
+     *   filter: { age: { $gt: 25 } }
+     * })
+     */
+    findRaw(args?: SharedChatFindRawArgs): Prisma.PrismaPromise<JsonObject>
+
+    /**
+     * Perform aggregation operations on a SharedChat.
+     * @param {SharedChatAggregateRawArgs} args - Select which aggregations you would like to apply.
+     * @example
+     * const sharedChat = await prisma.sharedChat.aggregateRaw({
+     *   pipeline: [
+     *     { $match: { status: "registered" } },
+     *     { $group: { _id: "$country", total: { $sum: 1 } } }
+     *   ]
+     * })
+     */
+    aggregateRaw(args?: SharedChatAggregateRawArgs): Prisma.PrismaPromise<JsonObject>
 
 
     /**
@@ -8335,30 +7770,6 @@ export namespace Prisma {
      * The data used to create many SharedChats.
      */
     data: SharedChatCreateManyInput | SharedChatCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * SharedChat createManyAndReturn
-   */
-  export type SharedChatCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SharedChat
-     */
-    select?: SharedChatSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the SharedChat
-     */
-    omit?: SharedChatOmit<ExtArgs> | null
-    /**
-     * The data used to create many SharedChats.
-     */
-    data: SharedChatCreateManyInput | SharedChatCreateManyInput[]
-    skipDuplicates?: boolean
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: SharedChatIncludeCreateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -8403,36 +7814,6 @@ export namespace Prisma {
      * Limit how many SharedChats to update.
      */
     limit?: number
-  }
-
-  /**
-   * SharedChat updateManyAndReturn
-   */
-  export type SharedChatUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SharedChat
-     */
-    select?: SharedChatSelectUpdateManyAndReturn<ExtArgs> | null
-    /**
-     * Omit specific fields from the SharedChat
-     */
-    omit?: SharedChatOmit<ExtArgs> | null
-    /**
-     * The data used to update SharedChats.
-     */
-    data: XOR<SharedChatUpdateManyMutationInput, SharedChatUncheckedUpdateManyInput>
-    /**
-     * Filter which SharedChats to update
-     */
-    where?: SharedChatWhereInput
-    /**
-     * Limit how many SharedChats to update.
-     */
-    limit?: number
-    /**
-     * Choose, which related nodes to fetch as well
-     */
-    include?: SharedChatIncludeUpdateManyAndReturn<ExtArgs> | null
   }
 
   /**
@@ -8502,6 +7883,34 @@ export namespace Prisma {
   }
 
   /**
+   * SharedChat findRaw
+   */
+  export type SharedChatFindRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The query predicate filter. If unspecified, then all documents in the collection will match the predicate. ${@link https://docs.mongodb.com/manual/reference/operator/query MongoDB Docs}.
+     */
+    filter?: InputJsonValue
+    /**
+     * Additional options to pass to the `find` command ${@link https://docs.mongodb.com/manual/reference/command/find/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
+   * SharedChat aggregateRaw
+   */
+  export type SharedChatAggregateRawArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * An array of aggregation stages to process and transform the document stream via the aggregation pipeline. ${@link https://docs.mongodb.com/manual/reference/operator/aggregation-pipeline MongoDB Docs}.
+     */
+    pipeline?: InputJsonValue[]
+    /**
+     * Additional options to pass to the `aggregate` command ${@link https://docs.mongodb.com/manual/reference/command/aggregate/#command-fields MongoDB Docs}.
+     */
+    options?: InputJsonValue
+  }
+
+  /**
    * SharedChat without action
    */
   export type SharedChatDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -8523,16 +7932,6 @@ export namespace Prisma {
   /**
    * Enums
    */
-
-  export const TransactionIsolationLevel: {
-    ReadUncommitted: 'ReadUncommitted',
-    ReadCommitted: 'ReadCommitted',
-    RepeatableRead: 'RepeatableRead',
-    Serializable: 'Serializable'
-  };
-
-  export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
-
 
   export const UserScalarFieldEnum: {
     id: 'id',
@@ -8644,37 +8043,12 @@ export namespace Prisma {
   export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
-  export const NullableJsonNullValueInput: {
-    DbNull: typeof DbNull,
-    JsonNull: typeof JsonNull
-  };
-
-  export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
-
-
   export const QueryMode: {
     default: 'default',
     insensitive: 'insensitive'
   };
 
   export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
-
-
-  export const NullsOrder: {
-    first: 'first',
-    last: 'last'
-  };
-
-  export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
-
-
-  export const JsonNullValueFilter: {
-    DbNull: typeof DbNull,
-    JsonNull: typeof JsonNull,
-    AnyNull: typeof AnyNull
-  };
-
-  export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
   /**
@@ -8739,13 +8113,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'QueryMode'
-   */
-  export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
-    
-
-
-  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -8784,7 +8151,7 @@ export namespace Prisma {
     email?: SortOrder
     name?: SortOrder
     password?: SortOrder
-    avatar?: SortOrderInput | SortOrder
+    avatar?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     conversations?: ConversationOrderByRelationAggregateInput
@@ -8815,7 +8182,7 @@ export namespace Prisma {
     email?: SortOrder
     name?: SortOrder
     password?: SortOrder
-    avatar?: SortOrderInput | SortOrder
+    avatar?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: UserCountOrderByAggregateInput
@@ -8861,16 +8228,16 @@ export namespace Prisma {
   export type ConversationOrderByWithRelationInput = {
     id?: SortOrder
     title?: SortOrder
-    modelId?: SortOrderInput | SortOrder
-    modelName?: SortOrderInput | SortOrder
+    modelId?: SortOrder
+    modelName?: SortOrder
     isPinned?: SortOrder
-    assistantId?: SortOrderInput | SortOrder
+    assistantId?: SortOrder
     isLocked?: SortOrder
     activePath?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     userId?: SortOrder
-    projectId?: SortOrderInput | SortOrder
+    projectId?: SortOrder
     user?: UserOrderByWithRelationInput
     project?: ProjectOrderByWithRelationInput
     messages?: MessageOrderByRelationAggregateInput
@@ -8902,16 +8269,16 @@ export namespace Prisma {
   export type ConversationOrderByWithAggregationInput = {
     id?: SortOrder
     title?: SortOrder
-    modelId?: SortOrderInput | SortOrder
-    modelName?: SortOrderInput | SortOrder
+    modelId?: SortOrder
+    modelName?: SortOrder
     isPinned?: SortOrder
-    assistantId?: SortOrderInput | SortOrder
+    assistantId?: SortOrder
     isLocked?: SortOrder
     activePath?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     userId?: SortOrder
-    projectId?: SortOrderInput | SortOrder
+    projectId?: SortOrder
     _count?: ConversationCountOrderByAggregateInput
     _max?: ConversationMaxOrderByAggregateInput
     _min?: ConversationMinOrderByAggregateInput
@@ -8960,15 +8327,15 @@ export namespace Prisma {
     id?: SortOrder
     role?: SortOrder
     content?: SortOrder
-    reasoning?: SortOrderInput | SortOrder
-    modelName?: SortOrderInput | SortOrder
-    parentId?: SortOrderInput | SortOrder
+    reasoning?: SortOrder
+    modelName?: SortOrder
+    parentId?: SortOrder
     siblingIds?: SortOrder
     version?: SortOrder
-    attachmentName?: SortOrderInput | SortOrder
-    attachmentType?: SortOrderInput | SortOrder
-    sources?: SortOrderInput | SortOrder
-    rating?: SortOrderInput | SortOrder
+    attachmentName?: SortOrder
+    attachmentType?: SortOrder
+    sources?: SortOrder
+    rating?: SortOrder
     createdAt?: SortOrder
     conversationId?: SortOrder
     conversation?: ConversationOrderByWithRelationInput
@@ -8999,15 +8366,15 @@ export namespace Prisma {
     id?: SortOrder
     role?: SortOrder
     content?: SortOrder
-    reasoning?: SortOrderInput | SortOrder
-    modelName?: SortOrderInput | SortOrder
-    parentId?: SortOrderInput | SortOrder
+    reasoning?: SortOrder
+    modelName?: SortOrder
+    parentId?: SortOrder
     siblingIds?: SortOrder
     version?: SortOrder
-    attachmentName?: SortOrderInput | SortOrder
-    attachmentType?: SortOrderInput | SortOrder
-    sources?: SortOrderInput | SortOrder
-    rating?: SortOrderInput | SortOrder
+    attachmentName?: SortOrder
+    attachmentType?: SortOrder
+    sources?: SortOrder
+    rating?: SortOrder
     createdAt?: SortOrder
     conversationId?: SortOrder
     _count?: MessageCountOrderByAggregateInput
@@ -9061,12 +8428,12 @@ export namespace Prisma {
   export type AssistantOrderByWithRelationInput = {
     id?: SortOrder
     name?: SortOrder
-    description?: SortOrderInput | SortOrder
-    instructions?: SortOrderInput | SortOrder
+    description?: SortOrder
+    instructions?: SortOrder
     model?: SortOrder
     temperature?: SortOrder
-    icon?: SortOrderInput | SortOrder
-    color?: SortOrderInput | SortOrder
+    icon?: SortOrder
+    color?: SortOrder
     actions?: SortOrder
     models?: SortOrder
     isPublic?: SortOrder
@@ -9100,12 +8467,12 @@ export namespace Prisma {
   export type AssistantOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
-    description?: SortOrderInput | SortOrder
-    instructions?: SortOrderInput | SortOrder
+    description?: SortOrder
+    instructions?: SortOrder
     model?: SortOrder
     temperature?: SortOrder
-    icon?: SortOrderInput | SortOrder
-    color?: SortOrderInput | SortOrder
+    icon?: SortOrder
+    color?: SortOrder
     actions?: SortOrder
     models?: SortOrder
     isPublic?: SortOrder
@@ -9160,14 +8527,14 @@ export namespace Prisma {
   export type ProjectOrderByWithRelationInput = {
     id?: SortOrder
     name?: SortOrder
-    instructions?: SortOrderInput | SortOrder
-    color?: SortOrderInput | SortOrder
-    icon?: SortOrderInput | SortOrder
+    instructions?: SortOrder
+    color?: SortOrder
+    icon?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     userId?: SortOrder
     chatIds?: SortOrder
-    chatDetails?: SortOrderInput | SortOrder
+    chatDetails?: SortOrder
     user?: UserOrderByWithRelationInput
     conversations?: ConversationOrderByRelationAggregateInput
   }
@@ -9193,14 +8560,14 @@ export namespace Prisma {
   export type ProjectOrderByWithAggregationInput = {
     id?: SortOrder
     name?: SortOrder
-    instructions?: SortOrderInput | SortOrder
-    color?: SortOrderInput | SortOrder
-    icon?: SortOrderInput | SortOrder
+    instructions?: SortOrder
+    color?: SortOrder
+    icon?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     userId?: SortOrder
     chatIds?: SortOrder
-    chatDetails?: SortOrderInput | SortOrder
+    chatDetails?: SortOrder
     _count?: ProjectCountOrderByAggregateInput
     _max?: ProjectMaxOrderByAggregateInput
     _min?: ProjectMinOrderByAggregateInput
@@ -9244,8 +8611,8 @@ export namespace Prisma {
     shareToken?: SortOrder
     isPublic?: SortOrder
     isUsed?: SortOrder
-    usedBy?: SortOrderInput | SortOrder
-    expiresAt?: SortOrderInput | SortOrder
+    usedBy?: SortOrder
+    expiresAt?: SortOrder
     creatorId?: SortOrder
     createdAt?: SortOrder
     conversationId?: SortOrder
@@ -9275,8 +8642,8 @@ export namespace Prisma {
     shareToken?: SortOrder
     isPublic?: SortOrder
     isUsed?: SortOrder
-    usedBy?: SortOrderInput | SortOrder
-    expiresAt?: SortOrderInput | SortOrder
+    usedBy?: SortOrder
+    expiresAt?: SortOrder
     creatorId?: SortOrder
     createdAt?: SortOrder
     conversationId?: SortOrder
@@ -9329,7 +8696,6 @@ export namespace Prisma {
   }
 
   export type UserUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -9343,7 +8709,6 @@ export namespace Prisma {
   }
 
   export type UserUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -9367,7 +8732,6 @@ export namespace Prisma {
   }
 
   export type UserUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -9377,7 +8741,6 @@ export namespace Prisma {
   }
 
   export type UserUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -9421,7 +8784,6 @@ export namespace Prisma {
   }
 
   export type ConversationUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9438,7 +8800,6 @@ export namespace Prisma {
   }
 
   export type ConversationUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9470,7 +8831,6 @@ export namespace Prisma {
   }
 
   export type ConversationUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9483,7 +8843,6 @@ export namespace Prisma {
   }
 
   export type ConversationUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9508,7 +8867,7 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | null
     rating?: string | null
     createdAt?: Date | string
     conversation: ConversationCreateNestedOneWithoutMessagesInput
@@ -9525,14 +8884,13 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | null
     rating?: string | null
     createdAt?: Date | string
     conversationId: string
   }
 
   export type MessageUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     reasoning?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9542,14 +8900,13 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     conversation?: ConversationUpdateOneRequiredWithoutMessagesNestedInput
   }
 
   export type MessageUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     reasoning?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9559,7 +8916,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     conversationId?: StringFieldUpdateOperationsInput | string
@@ -9576,14 +8933,13 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | null
     rating?: string | null
     createdAt?: Date | string
     conversationId: string
   }
 
   export type MessageUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     reasoning?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9593,13 +8949,12 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type MessageUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     reasoning?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9609,7 +8964,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     conversationId?: StringFieldUpdateOperationsInput | string
@@ -9650,7 +9005,6 @@ export namespace Prisma {
   }
 
   export type AssistantUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9667,7 +9021,6 @@ export namespace Prisma {
   }
 
   export type AssistantUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9701,7 +9054,6 @@ export namespace Prisma {
   }
 
   export type AssistantUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9717,7 +9069,6 @@ export namespace Prisma {
   }
 
   export type AssistantUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9742,7 +9093,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     chatIds?: ProjectCreatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | null
     user: UserCreateNestedOneWithoutProjectsInput
     conversations?: ConversationCreateNestedManyWithoutProjectInput
   }
@@ -9757,12 +9108,11 @@ export namespace Prisma {
     updatedAt?: Date | string
     userId: string
     chatIds?: ProjectCreatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | null
     conversations?: ConversationUncheckedCreateNestedManyWithoutProjectInput
   }
 
   export type ProjectUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9770,13 +9120,12 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatIds?: ProjectUpdatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | InputJsonValue | null
     user?: UserUpdateOneRequiredWithoutProjectsNestedInput
     conversations?: ConversationUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9785,7 +9134,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     userId?: StringFieldUpdateOperationsInput | string
     chatIds?: ProjectUpdatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | InputJsonValue | null
     conversations?: ConversationUncheckedUpdateManyWithoutProjectNestedInput
   }
 
@@ -9799,11 +9148,10 @@ export namespace Prisma {
     updatedAt?: Date | string
     userId: string
     chatIds?: ProjectCreatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | null
   }
 
   export type ProjectUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9811,11 +9159,10 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatIds?: ProjectUpdatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | InputJsonValue | null
   }
 
   export type ProjectUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
@@ -9824,7 +9171,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     userId?: StringFieldUpdateOperationsInput | string
     chatIds?: ProjectUpdatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | InputJsonValue | null
   }
 
   export type SharedChatCreateInput = {
@@ -9852,7 +9199,6 @@ export namespace Prisma {
   }
 
   export type SharedChatUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     shareToken?: StringFieldUpdateOperationsInput | string
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     isUsed?: BoolFieldUpdateOperationsInput | boolean
@@ -9864,7 +9210,6 @@ export namespace Prisma {
   }
 
   export type SharedChatUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string
     shareToken?: StringFieldUpdateOperationsInput | string
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     isUsed?: BoolFieldUpdateOperationsInput | boolean
@@ -9888,7 +9233,6 @@ export namespace Prisma {
   }
 
   export type SharedChatUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     shareToken?: StringFieldUpdateOperationsInput | string
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     isUsed?: BoolFieldUpdateOperationsInput | boolean
@@ -9898,7 +9242,6 @@ export namespace Prisma {
   }
 
   export type SharedChatUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string
     shareToken?: StringFieldUpdateOperationsInput | string
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     isUsed?: BoolFieldUpdateOperationsInput | boolean
@@ -9937,6 +9280,7 @@ export namespace Prisma {
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     mode?: QueryMode
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+    isSet?: boolean
   }
 
   export type DateTimeFilter<$PrismaModel = never> = {
@@ -9972,11 +9316,6 @@ export namespace Prisma {
     every?: SharedChatWhereInput
     some?: SharedChatWhereInput
     none?: SharedChatWhereInput
-  }
-
-  export type SortOrderInput = {
-    sort: SortOrder
-    nulls?: NullsOrder
   }
 
   export type ConversationOrderByRelationAggregateInput = {
@@ -10059,6 +9398,7 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
+    isSet?: boolean
   }
 
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -10177,20 +9517,9 @@ export namespace Prisma {
     | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
 
   export type JsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    isSet?: boolean
   }
 
   export type ConversationScalarRelationFilter = {
@@ -10276,23 +9605,12 @@ export namespace Prisma {
     | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
 
   export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedJsonNullableFilter<$PrismaModel>
     _max?: NestedJsonNullableFilter<$PrismaModel>
+    isSet?: boolean
   }
 
   export type FloatFilter<$PrismaModel = never> = {
@@ -10421,6 +9739,7 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+    isSet?: boolean
   }
 
   export type SharedChatCountOrderByAggregateInput = {
@@ -10471,6 +9790,7 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+    isSet?: boolean
   }
 
   export type ConversationCreateNestedManyWithoutUserInput = {
@@ -10535,6 +9855,7 @@ export namespace Prisma {
 
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
+    unset?: boolean
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -10718,7 +10039,7 @@ export namespace Prisma {
     create?: XOR<ProjectCreateWithoutConversationsInput, ProjectUncheckedCreateWithoutConversationsInput>
     connectOrCreate?: ProjectCreateOrConnectWithoutConversationsInput
     upsert?: ProjectUpsertWithoutConversationsInput
-    disconnect?: ProjectWhereInput | boolean
+    disconnect?: boolean
     delete?: ProjectWhereInput | boolean
     connect?: ProjectWhereUniqueInput
     update?: XOR<XOR<ProjectUpdateToOneWithWhereWithoutConversationsInput, ProjectUpdateWithoutConversationsInput>, ProjectUncheckedUpdateWithoutConversationsInput>
@@ -10930,6 +10251,7 @@ export namespace Prisma {
 
   export type NullableDateTimeFieldUpdateOperationsInput = {
     set?: Date | string | null
+    unset?: boolean
   }
 
   export type UserUpdateOneRequiredWithoutSharedChatsNestedInput = {
@@ -10974,6 +10296,7 @@ export namespace Prisma {
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+    isSet?: boolean
   }
 
   export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -11030,6 +10353,7 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
+    isSet?: boolean
   }
 
   export type NestedIntNullableFilter<$PrismaModel = never> = {
@@ -11041,6 +10365,7 @@ export namespace Prisma {
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
+    isSet?: boolean
   }
 
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -11104,20 +10429,9 @@ export namespace Prisma {
     | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
 
   export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
-    path?: string[]
-    mode?: QueryMode | EnumQueryModeFieldRefInput<$PrismaModel>
-    string_contains?: string | StringFieldRefInput<$PrismaModel>
-    string_starts_with?: string | StringFieldRefInput<$PrismaModel>
-    string_ends_with?: string | StringFieldRefInput<$PrismaModel>
-    array_starts_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_ends_with?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    array_contains?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    lt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    lte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gt?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    gte?: InputJsonValue | JsonFieldRefInput<$PrismaModel>
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | JsonNullValueFilter
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    isSet?: boolean
   }
 
   export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
@@ -11145,6 +10459,7 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+    isSet?: boolean
   }
 
   export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -11159,6 +10474,7 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+    isSet?: boolean
   }
 
   export type ConversationCreateWithoutUserInput = {
@@ -11200,7 +10516,6 @@ export namespace Prisma {
 
   export type ConversationCreateManyUserInputEnvelope = {
     data: ConversationCreateManyUserInput | ConversationCreateManyUserInput[]
-    skipDuplicates?: boolean
   }
 
   export type AssistantCreateWithoutUserInput = {
@@ -11242,7 +10557,6 @@ export namespace Prisma {
 
   export type AssistantCreateManyUserInputEnvelope = {
     data: AssistantCreateManyUserInput | AssistantCreateManyUserInput[]
-    skipDuplicates?: boolean
   }
 
   export type ProjectCreateWithoutUserInput = {
@@ -11254,7 +10568,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     chatIds?: ProjectCreatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | null
     conversations?: ConversationCreateNestedManyWithoutProjectInput
   }
 
@@ -11267,7 +10581,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     chatIds?: ProjectCreatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | null
     conversations?: ConversationUncheckedCreateNestedManyWithoutProjectInput
   }
 
@@ -11278,7 +10592,6 @@ export namespace Prisma {
 
   export type ProjectCreateManyUserInputEnvelope = {
     data: ProjectCreateManyUserInput | ProjectCreateManyUserInput[]
-    skipDuplicates?: boolean
   }
 
   export type SharedChatCreateWithoutCreatorInput = {
@@ -11310,7 +10623,6 @@ export namespace Prisma {
 
   export type SharedChatCreateManyCreatorInputEnvelope = {
     data: SharedChatCreateManyCreatorInput | SharedChatCreateManyCreatorInput[]
-    skipDuplicates?: boolean
   }
 
   export type ConversationUpsertWithWhereUniqueWithoutUserInput = {
@@ -11486,7 +10798,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     chatIds?: ProjectCreatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | null
     user: UserCreateNestedOneWithoutProjectsInput
   }
 
@@ -11500,7 +10812,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     userId: string
     chatIds?: ProjectCreatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | null
   }
 
   export type ProjectCreateOrConnectWithoutConversationsInput = {
@@ -11519,7 +10831,7 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | null
     rating?: string | null
     createdAt?: Date | string
   }
@@ -11535,7 +10847,7 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | null
     rating?: string | null
     createdAt?: Date | string
   }
@@ -11547,7 +10859,6 @@ export namespace Prisma {
 
   export type MessageCreateManyConversationInputEnvelope = {
     data: MessageCreateManyConversationInput | MessageCreateManyConversationInput[]
-    skipDuplicates?: boolean
   }
 
   export type SharedChatCreateWithoutConversationInput = {
@@ -11579,7 +10890,6 @@ export namespace Prisma {
 
   export type SharedChatCreateManyConversationInputEnvelope = {
     data: SharedChatCreateManyConversationInput | SharedChatCreateManyConversationInput[]
-    skipDuplicates?: boolean
   }
 
   export type UserUpsertWithoutConversationsInput = {
@@ -11594,7 +10904,6 @@ export namespace Prisma {
   }
 
   export type UserUpdateWithoutConversationsInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -11607,7 +10916,6 @@ export namespace Prisma {
   }
 
   export type UserUncheckedUpdateWithoutConversationsInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -11631,7 +10939,6 @@ export namespace Prisma {
   }
 
   export type ProjectUpdateWithoutConversationsInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11639,12 +10946,11 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatIds?: ProjectUpdatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | InputJsonValue | null
     user?: UserUpdateOneRequiredWithoutProjectsNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutConversationsInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11653,7 +10959,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     userId?: StringFieldUpdateOperationsInput | string
     chatIds?: ProjectUpdatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | InputJsonValue | null
   }
 
   export type MessageUpsertWithWhereUniqueWithoutConversationInput = {
@@ -11757,7 +11063,6 @@ export namespace Prisma {
   }
 
   export type ConversationUpdateWithoutMessagesInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11773,7 +11078,6 @@ export namespace Prisma {
   }
 
   export type ConversationUncheckedUpdateWithoutMessagesInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -11831,7 +11135,6 @@ export namespace Prisma {
   }
 
   export type UserUpdateWithoutAssistantsInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -11844,7 +11147,6 @@ export namespace Prisma {
   }
 
   export type UserUncheckedUpdateWithoutAssistantsInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -11926,7 +11228,6 @@ export namespace Prisma {
 
   export type ConversationCreateManyProjectInputEnvelope = {
     data: ConversationCreateManyProjectInput | ConversationCreateManyProjectInput[]
-    skipDuplicates?: boolean
   }
 
   export type UserUpsertWithoutProjectsInput = {
@@ -11941,7 +11242,6 @@ export namespace Prisma {
   }
 
   export type UserUpdateWithoutProjectsInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -11954,7 +11254,6 @@ export namespace Prisma {
   }
 
   export type UserUncheckedUpdateWithoutProjectsInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -12062,7 +11361,6 @@ export namespace Prisma {
   }
 
   export type UserUpdateWithoutSharedChatsInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -12075,7 +11373,6 @@ export namespace Prisma {
   }
 
   export type UserUncheckedUpdateWithoutSharedChatsInput = {
-    id?: StringFieldUpdateOperationsInput | string
     email?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
@@ -12099,7 +11396,6 @@ export namespace Prisma {
   }
 
   export type ConversationUpdateWithoutSharedChatInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12115,7 +11411,6 @@ export namespace Prisma {
   }
 
   export type ConversationUncheckedUpdateWithoutSharedChatInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12169,7 +11464,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     chatIds?: ProjectCreatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | null
   }
 
   export type SharedChatCreateManyCreatorInput = {
@@ -12184,7 +11479,6 @@ export namespace Prisma {
   }
 
   export type ConversationUpdateWithoutUserInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12200,7 +11494,6 @@ export namespace Prisma {
   }
 
   export type ConversationUncheckedUpdateWithoutUserInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12216,7 +11509,6 @@ export namespace Prisma {
   }
 
   export type ConversationUncheckedUpdateManyWithoutUserInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12230,7 +11522,6 @@ export namespace Prisma {
   }
 
   export type AssistantUpdateWithoutUserInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12246,7 +11537,6 @@ export namespace Prisma {
   }
 
   export type AssistantUncheckedUpdateWithoutUserInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12262,7 +11552,6 @@ export namespace Prisma {
   }
 
   export type AssistantUncheckedUpdateManyWithoutUserInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     description?: NullableStringFieldUpdateOperationsInput | string | null
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12278,7 +11567,6 @@ export namespace Prisma {
   }
 
   export type ProjectUpdateWithoutUserInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12286,12 +11574,11 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatIds?: ProjectUpdatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | InputJsonValue | null
     conversations?: ConversationUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateWithoutUserInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12299,12 +11586,11 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatIds?: ProjectUpdatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | InputJsonValue | null
     conversations?: ConversationUncheckedUpdateManyWithoutProjectNestedInput
   }
 
   export type ProjectUncheckedUpdateManyWithoutUserInput = {
-    id?: StringFieldUpdateOperationsInput | string
     name?: StringFieldUpdateOperationsInput | string
     instructions?: NullableStringFieldUpdateOperationsInput | string | null
     color?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12312,11 +11598,10 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     chatIds?: ProjectUpdatechatIdsInput | string[]
-    chatDetails?: NullableJsonNullValueInput | InputJsonValue
+    chatDetails?: InputJsonValue | InputJsonValue | null
   }
 
   export type SharedChatUpdateWithoutCreatorInput = {
-    id?: StringFieldUpdateOperationsInput | string
     shareToken?: StringFieldUpdateOperationsInput | string
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     isUsed?: BoolFieldUpdateOperationsInput | boolean
@@ -12327,7 +11612,6 @@ export namespace Prisma {
   }
 
   export type SharedChatUncheckedUpdateWithoutCreatorInput = {
-    id?: StringFieldUpdateOperationsInput | string
     shareToken?: StringFieldUpdateOperationsInput | string
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     isUsed?: BoolFieldUpdateOperationsInput | boolean
@@ -12338,7 +11622,6 @@ export namespace Prisma {
   }
 
   export type SharedChatUncheckedUpdateManyWithoutCreatorInput = {
-    id?: StringFieldUpdateOperationsInput | string
     shareToken?: StringFieldUpdateOperationsInput | string
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     isUsed?: BoolFieldUpdateOperationsInput | boolean
@@ -12359,7 +11642,7 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | null
     rating?: string | null
     createdAt?: Date | string
   }
@@ -12376,7 +11659,6 @@ export namespace Prisma {
   }
 
   export type MessageUpdateWithoutConversationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     reasoning?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12386,13 +11668,12 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type MessageUncheckedUpdateWithoutConversationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     reasoning?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12402,13 +11683,12 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type MessageUncheckedUpdateManyWithoutConversationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     role?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
     reasoning?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12418,13 +11698,12 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
-    sources?: NullableJsonNullValueInput | InputJsonValue
+    sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type SharedChatUpdateWithoutConversationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     shareToken?: StringFieldUpdateOperationsInput | string
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     isUsed?: BoolFieldUpdateOperationsInput | boolean
@@ -12435,7 +11714,6 @@ export namespace Prisma {
   }
 
   export type SharedChatUncheckedUpdateWithoutConversationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     shareToken?: StringFieldUpdateOperationsInput | string
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     isUsed?: BoolFieldUpdateOperationsInput | boolean
@@ -12446,7 +11724,6 @@ export namespace Prisma {
   }
 
   export type SharedChatUncheckedUpdateManyWithoutConversationInput = {
-    id?: StringFieldUpdateOperationsInput | string
     shareToken?: StringFieldUpdateOperationsInput | string
     isPublic?: BoolFieldUpdateOperationsInput | boolean
     isUsed?: BoolFieldUpdateOperationsInput | boolean
@@ -12471,7 +11748,6 @@ export namespace Prisma {
   }
 
   export type ConversationUpdateWithoutProjectInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12487,7 +11763,6 @@ export namespace Prisma {
   }
 
   export type ConversationUncheckedUpdateWithoutProjectInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null
@@ -12503,7 +11778,6 @@ export namespace Prisma {
   }
 
   export type ConversationUncheckedUpdateManyWithoutProjectInput = {
-    id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     modelId?: NullableStringFieldUpdateOperationsInput | string | null
     modelName?: NullableStringFieldUpdateOperationsInput | string | null

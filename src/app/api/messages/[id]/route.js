@@ -70,10 +70,10 @@ export async function PATCH(request, { params }) {
 
         console.log(`[API] PATCH /api/messages/${id}/rating - Rating: ${rating}`);
 
-        // Fast UUID format check to prevent Prisma from throwing on malformed IDs
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(id)) {
-            console.warn(`[API] PATCH /api/messages/${id}/rating - Invalid UUID format`);
+        // Fast ObjectId format check to prevent Prisma from throwing on malformed IDs
+        const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+        if (!objectIdRegex.test(id)) {
+            console.warn(`[API] PATCH /api/messages/${id}/rating - Invalid ObjectId format`);
             return error('Invalid message ID format', 400);
         }
 

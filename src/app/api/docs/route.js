@@ -1,5 +1,8 @@
 // GET /api/docs — Swagger UI Documentation
 // Serves a full interactive API documentation page
+import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
     const html = `<!DOCTYPE html>

@@ -13,7 +13,9 @@ const openrouter = new OpenAI({
     }
 });
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
     let modelId = 'unknown';
