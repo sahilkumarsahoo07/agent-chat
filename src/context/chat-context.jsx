@@ -22,6 +22,7 @@ export function ChatProvider({ children }) {
     const [isHydrated, setIsHydrated] = useState(false);
     const [streamingIds, setStreamingIds] = useState([]);
     const [selectedAssistantId, setSelectedAssistantId] = useState(null);
+    const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const abortControllers = useRef({});
 
     const activeProject = projects.find(p => p.id === activeProjectId);
@@ -218,7 +219,8 @@ export function ChatProvider({ children }) {
                                     ...lastMsg,
                                     content: content !== undefined ? content : lastMsg.content,
                                     reasoning: reasoning !== undefined ? reasoning : lastMsg.reasoning,
-                                    isThinking: false
+                                    isThinking: false,
+                                    modelName: modelName
                                 };
                                 if (sources) newMsg.sources = sources;
                                 msgs[targetIndex] = newMsg;
@@ -537,12 +539,18 @@ export function ChatProvider({ children }) {
         return null;
     }, [token, showToast]);
 
-    const addMessage = useCallback(async (conversationId, content, role = 'user', modelId = 'gpt-4o', modelName = 'GPT-4o', fileAttachment = null) => {
+    const addMessage = useCallback(async (conversationId, content, role = 'user', modelId = 'arcee-ai/trinity-large-preview:free', modelName = 'Trinity Large', fileAttachment = null) => {
         if (!content && !fileAttachment) return;
 
+        // Capture parent ID BEFORE updating state
+        const currentConv = conversations.find(c => c.id === conversationId);
+        const parentId = currentConv?.activePath?.length > 0
+            ? currentConv.activePath[currentConv.activePath.length - 1]
+            : null;
+
         const tempId = Date.now().toString();
-        const userMsg = { id: tempId, role, content, timestamp: new Date(), attachment: fileAttachment };
-        const aiMsg = { id: tempId + '-ai', role: 'assistant', content: '', isThinking: true, timestamp: new Date() };
+        const userMsg = { id: tempId, role, content, timestamp: new Date(), attachment: fileAttachment, parentId };
+        const aiMsg = { id: tempId + '-ai', role: 'assistant', content: '', isThinking: true, timestamp: new Date(), parentId: tempId };
 
         setConversations(prev => prev.map(c => {
             if (c.id === conversationId) {
@@ -558,16 +566,6 @@ export function ChatProvider({ children }) {
         }));
 
         try {
-            // Get parent ID from current state to ensure we attach to the right leaf.
-            const currentConv = conversations.find(c => c.id === conversationId);
-            // We use the last ID in activePath as the parent. 
-            // Note: activePath might contain the optimistic tempId we just added in setConversations above?
-            // Yes, setConversations runs first, but state update in React is async/batched. 
-            // inside this closure `conversations` is the value from render time.
-            // So `currentConv` here is likely the OLD state (before we added the new message).
-            // WHICH IS GOOD. The last item in OLD activePath is exactly the parent of the new message.
-            const parentId = currentConv?.activePath && currentConv.activePath.length > 0 ? currentConv.activePath[currentConv.activePath.length - 1] : null;
-
             const res = await fetch('/api/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -591,10 +589,18 @@ export function ChatProvider({ children }) {
 
                 setConversations(prev => prev.map(c => {
                     if (c.id === conversationId) {
-                        const allMsgs = c.allMessages.map(m => m.id === tempId ? { ...m, id: realId, createdAt: data.data.createdAt } : m);
-                        // activePath currently has tempId. Replace with realId.
+                        // Replace tempId with realId everywhere, including parentId references
+                        const allMsgs = c.allMessages.map(m => {
+                            if (m.id === tempId) return { ...m, id: realId, createdAt: data.data.createdAt };
+                            if (m.parentId === tempId) return { ...m, parentId: realId }; // Fix AI placeholder's parentId
+                            return m;
+                        });
                         const activePath = c.activePath.map(id => id === tempId ? realId : id);
-                        const msgs = c.messages.map(m => m.id === tempId ? { ...m, id: realId, createdAt: data.data.createdAt } : m);
+                        const msgs = c.messages.map(m => {
+                            if (m.id === tempId) return { ...m, id: realId, createdAt: data.data.createdAt };
+                            if (m.parentId === tempId) return { ...m, parentId: realId };
+                            return m;
+                        });
 
                         return {
                             ...c,
@@ -772,12 +778,11 @@ export function ChatProvider({ children }) {
         const targetMsg = conv.allMessages.find(m => m.id === targetVersionId);
         if (!targetMsg) return;
 
-        // Build the complete path from root to target
+        // Build the complete path from root to target by walking parentId chain upward
         let newPath = [];
         let currentMsg = targetMsg;
         let loopGuard = 0;
 
-        // First, build the path backwards from target to root
         const reversePath = [];
         while (currentMsg && loopGuard < 100) {
             loopGuard++;
@@ -791,28 +796,34 @@ export function ChatProvider({ children }) {
 
         newPath = reversePath;
 
-        // Try to extend path if there are children (to show the complete conversation)
+        // Now extend the path forward through the children of targetMsg.
+        // IMPORTANT: Only follow direct children (parentId === lastMsg.id).
+        // If the version has no children (newly regenerated), the path ends here.
+        // If the version has children (original with subsequent Q&A), follow them.
         let lastMsg = targetMsg;
         loopGuard = 0;
         while (loopGuard < 100) {
             loopGuard++;
+            // Find all direct children of this message
             const children = conv.allMessages.filter(m => m.parentId === lastMsg.id);
-            if (children.length > 0) {
-                // Sort by createdAt and pick the latest
-                children.sort((a, b) => new Date(b.createdAt || b.timestamp || 0) - new Date(a.createdAt || a.timestamp || 0));
-                const latestChild = children[0];
-                newPath.push(latestChild.id);
-                lastMsg = latestChild;
-            } else {
-                break;
-            }
+            if (children.length === 0) break;
+
+            // Prefer children that are currently in the active path (i.e., the "selected" branch)
+            // If none are in the current active path, pick the one with the most recent timestamp
+            const activePathChild = children.find(c => conv.activePath.includes(c.id));
+            const chosen = activePathChild || children.sort((a, b) =>
+                new Date(a.createdAt || a.timestamp || 0) - new Date(b.createdAt || b.timestamp || 0)
+            )[0];
+
+            newPath.push(chosen.id);
+            lastMsg = chosen;
         }
 
-        // Update UI
-        console.log('New path constructed:', newPath);
-        console.log('All messages available:', conv.allMessages.map(m => ({ id: m.id, role: m.role, content: m.content?.substring(0, 50) + '...' })));
-        const activeMessages = newPath.map(id => conv.allMessages.find(m => m.id === id)).filter(Boolean);
-        console.log('Active messages found:', activeMessages.map(m => ({ id: m.id, role: m.role, content: m.content?.substring(0, 50) + '...' })));
+        // Force clear isThinking on all messages in the active path (safety guard for stale state)
+        const activeMessages = newPath
+            .map(id => conv.allMessages.find(m => m.id === id))
+            .filter(Boolean)
+            .map(m => m.isThinking ? { ...m, isThinking: false } : m);
 
         // Ensure we actually found messages
         if (activeMessages.length === 0 && newPath.length > 0) {
@@ -822,7 +833,7 @@ export function ChatProvider({ children }) {
 
         setConversations(prev => prev.map(c => c.id === conversationId ? { ...c, activePath: newPath, messages: activeMessages } : c));
 
-        // Update API - but only if the path actually changed and is different from current
+        // Persist to API if the path changed
         if (JSON.stringify(newPath) !== JSON.stringify(conv.activePath)) {
             fetch(`/api/conversations/${conversationId}`, {
                 method: 'PUT',
@@ -833,30 +844,40 @@ export function ChatProvider({ children }) {
 
     }, [token, conversations]);
 
-    const regenerateResponse = useCallback(async (conversationId, modelId = 'gpt-4o', modelName = 'GPT-4o') => {
+    const regenerateResponse = useCallback(async (conversationId, modelId = 'arcee-ai/trinity-large-preview:free', modelName = 'Trinity Large', assistantId = null, targetMsgId = null) => {
         const conv = conversations.find(c => c.id === conversationId);
         if (!conv) return;
 
-        // Remove last assistant message from view (will be replaced by new one)
-        // Actually, we want to branch.
-        // We leave the old one in `allMessages` but remove from `activePath`.
-
+        // Determine which assistant message to branch from
+        // If a targetMsgId is provided, truncate activePath at that message's position
         let newPath = [...(conv.activePath || [])];
-        const lastMsgId = newPath[newPath.length - 1];
-        const lastMsg = conv.allMessages.find(m => m.id === lastMsgId);
 
-        if (lastMsg?.role === 'assistant') {
-            // Pop it
-            newPath.pop();
-            // Now last is user message.
+        let targetIdx;
+        if (targetMsgId) {
+            targetIdx = newPath.indexOf(targetMsgId);
+        } else {
+            // Fall back to last message
+            targetIdx = newPath.length - 1;
+        }
+
+        if (targetIdx === -1) return; // Target not in current path
+
+        const targetMsgIdInPath = newPath[targetIdx];
+        const targetMsg = conv.allMessages.find(m => m.id === targetMsgIdInPath);
+
+        if (targetMsg?.role === 'assistant') {
+            // Truncate path to just before the target message
+            newPath = newPath.slice(0, targetIdx);
+
+            // The last item is now the user message that triggered this response
             const userMsgId = newPath[newPath.length - 1];
 
-            // Add new placeholder
+            // Add new placeholder AI message
             const newAiId = 'temp-regen-' + Date.now();
 
-            // Handle siblings: Link new message to old message and its existing siblings
-            const existingSiblings = lastMsg.siblingIds || [];
-            const allSiblingIds = [lastMsg.id, ...existingSiblings];
+            // Handle siblings: Link new message to the old message and its existing siblings
+            const existingSiblings = targetMsg.siblingIds || [];
+            const allSiblingIds = [targetMsg.id, ...existingSiblings];
 
             const aiMsg = {
                 id: newAiId,
@@ -865,25 +886,22 @@ export function ChatProvider({ children }) {
                 isThinking: true,
                 timestamp: new Date(),
                 parentId: userMsgId,
-                siblingIds: existingSiblings // Should only include existing siblings, not the old message itself
+                siblingIds: allSiblingIds
             };
 
             newPath.push(newAiId);
 
-            // Let's make `updatedAllMessages` just the list of *existing* messages with updated siblings.
+            // Update sibling IDs for all related existing messages
             const messagesWithUpdatedSiblings = conv.allMessages.map(m => {
                 if (allSiblingIds.includes(m.id)) {
-                    return { ...m, siblingIds: [...(m.siblingIds || []), newAiId] };
+                    // Add new AI message to their sibling list
+                    const updatedSiblings = [...new Set([...(m.siblingIds || []), newAiId])];
+                    return { ...m, siblingIds: updatedSiblings };
                 }
                 return m;
             });
 
-            const updatedAiMsg = {
-                ...aiMsg,
-                siblingIds: allSiblingIds
-            };
-
-            const updatedAllMessages = [...messagesWithUpdatedSiblings, updatedAiMsg];
+            const updatedAllMessages = [...messagesWithUpdatedSiblings, aiMsg];
 
             setConversations(prev => prev.map(c => {
                 if (c.id === conversationId) {
@@ -897,9 +915,9 @@ export function ChatProvider({ children }) {
                 return c;
             }));
 
-            // Trigger API
+            // Trigger API with the history up to (but not including) the new placeholder
             const history = newPath.slice(0, -1).map(id => updatedAllMessages.find(m => m.id === id)).filter(Boolean);
-            fetchOpenAIResponse(conversationId, history, modelId, modelName, activeProject?.instructions, conv?.assistantId, newAiId);
+            fetchOpenAIResponse(conversationId, history, modelId, modelName, activeProject?.instructions, assistantId || conv?.assistantId, newAiId);
         }
     }, [token, conversations, fetchOpenAIResponse, activeProject]);
 
@@ -1205,6 +1223,8 @@ export function ChatProvider({ children }) {
         addChatToProject,
         selectedAssistantId,
         setSelectedAssistantId,
+        isMobileDrawerOpen,
+        setIsMobileDrawerOpen,
 
         // Stubs for remaining checks
         removeActiveAssistant: (id) => setActiveAssistants(p => p.filter(x => x.id !== id)),

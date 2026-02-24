@@ -37,6 +37,7 @@ import {
     Terminal,
     Mail,
     ArrowDown,
+    Menu,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -50,7 +51,6 @@ import SourcesSidebar from './sources-sidebar';
 import ShareChatModal from './share-chat-modal';
 import AssistantIcon from './assistant-icon';
 import { STATIC_ASSISTANTS, MODELS } from '@/lib/assistants-config';
-import StudioPanel from './studio-panel';
 
 function checkReasoningCapability(msg, activeAssistant, activeModel) {
     // 1. If message already has reasoning, it's capable
@@ -171,7 +171,8 @@ export default function ChatInterface() {
         setSelectedAssistantId,
         setActiveProjectId,
         rateMessage,
-        customAssistants
+        customAssistants,
+        setIsMobileDrawerOpen
     } = useChat();
 
     const isGenerating = streamingIds.includes(activeConversationId);
@@ -229,7 +230,7 @@ export default function ChatInterface() {
                 }
             }
         }
-        return MODELS.find(m => m.model === 'openai/gpt-4o') || MODELS[0];
+        return MODELS.find(m => m.model === 'arcee-ai/trinity-large-preview:free') || MODELS[0];
     });
 
     const [isMounted, setIsMounted] = useState(false);
@@ -521,8 +522,14 @@ export default function ChatInterface() {
                         {/* Header - only show when conversation exists */}
                         {activeConversation && activeConversation.messages.length > 0 && (
                             <div className="sticky top-0 z-10 bg-[var(--background)] px-4 md:px-6 py-3">
-                                <div className="flex items-center justify-end">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex items-center justify-between">
+                                    <button
+                                        onClick={() => setIsMobileDrawerOpen(true)}
+                                        className="md:hidden p-2 -ml-2 rounded-lg hover:bg-[var(--border)] transition-colors text-[var(--sidebar-foreground)]"
+                                    >
+                                        <Menu size={20} />
+                                    </button>
+                                    <div className="flex items-center gap-2 ml-auto">
                                         {/* Share Chat Button */}
                                         <button
                                             onClick={() => setShowShareModal(true)}
@@ -657,8 +664,16 @@ export default function ChatInterface() {
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0, y: -20 }}
-                                            className="flex flex-col items-center h-full"
+                                            className="flex flex-col items-center h-full relative"
                                         >
+                                            {/* Mobile Menu Button for New Chat View */}
+                                            <button
+                                                onClick={() => setIsMobileDrawerOpen(true)}
+                                                className="absolute top-4 left-4 md:hidden p-2 rounded-lg hover:bg-[var(--border)] transition-colors text-[var(--sidebar-foreground)] z-10"
+                                            >
+                                                <Menu size={20} />
+                                            </button>
+
                                             <div className="flex flex-col items-center pt-16 md:pt-32 w-full">
                                                 <div className="flex flex-col items-center md:flex-row md:justify-center gap-4 text-center md:text-left w-full">
                                                     <div className="w-14 h-14 rounded-2xl border border-[var(--border)] flex items-center justify-center flex-shrink-0 bg-[var(--card)] shadow-sm">
@@ -1023,7 +1038,7 @@ export default function ChatInterface() {
                                                                                 <ThumbsDown size={16} fill={msg.rating === 'dislike' ? "currentColor" : "none"} />
                                                                             </button>
                                                                         )}
-                                                                        <div className="relative">
+                                                                        <div className="relative regenerate-menu">
                                                                             <button
                                                                                 ref={(el) => {
                                                                                     if (el && regenerateId === msg.id && !dropdownPosition[msg.id]) {
@@ -1059,7 +1074,7 @@ export default function ChatInterface() {
                                                                                 <span className="text-xs font-medium">
                                                                                     {(() => {
                                                                                         const model = MODELS.find(m => m.model === msg.modelName || m.name === msg.modelName);
-                                                                                        return model?.name || msg.modelName || 'o4-mini';
+                                                                                        return model?.name || msg.modelName || 'Solar Pro';
                                                                                     })()}
                                                                                 </span>
                                                                             </button>
@@ -1078,7 +1093,7 @@ export default function ChatInterface() {
                                                                                             onClick={() => {
                                                                                                 setSelectedModel(model);
                                                                                                 setRegenerateId(null);
-                                                                                                regenerateResponse(activeConversationId, model.model, model.name, activeAssistant?.id);
+                                                                                                regenerateResponse(activeConversationId, model.model, model.name, activeAssistant?.id, msg.id);
                                                                                             }}
                                                                                             className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[var(--border)]/50 text-[var(--foreground)] transition-all text-left group/item"
                                                                                         >
@@ -1390,8 +1405,6 @@ export default function ChatInterface() {
                     )}
                 </AnimatePresence>
             </div>
-            {/* Studio Panel */}
-            <StudioPanel />
         </div>
     );
 }

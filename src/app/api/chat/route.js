@@ -6,7 +6,7 @@ const openai = new OpenAI({
 
 const openrouter = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENROUTER_API_KEY,
     defaultHeaders: {
         "HTTP-Referer": "http://localhost:3000",
         "X-Title": "Agent-Chat",
@@ -22,7 +22,7 @@ export async function POST(req) {
         modelId = model;
 
         // Determine which client to use and refine the model ID
-        let finalModel = model || 'gpt-5-nano';
+        let finalModel = model || 'arcee-ai/trinity-large-preview:free';
 
         // Detect if the providing key is an OpenRouter key
         const isOpenRouterKey = process.env.OPENAI_API_KEY?.startsWith('sk-or-');
