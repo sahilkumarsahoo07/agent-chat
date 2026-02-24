@@ -8,7 +8,7 @@ import { useToast } from './toast-context';
 const ChatContext = createContext(null);
 
 export function ChatProvider({ children }) {
-    const { token, user } = useAuth();
+    const { token, user, decreaseToken } = useAuth();
     const { showToast } = useToast();
     const router = useRouter();
     const params = useParams();
@@ -192,7 +192,23 @@ export function ChatProvider({ children }) {
                 signal: controller.signal
             });
 
-            if (!response.ok) throw new Error(`API Error: ${response.status}`);
+            if (!response.ok) {
+                if (response.status === 402) {
+                    setConversations(prev => prev.map(conv => {
+                        if (conv.id === conversationId) {
+                            const errorMessage = `You've reached your daily token limit for this plan! 🚀\n\nPlease **Upgrade Your Plan** to get more tokens instantly, or wait until your tokens automatically reset.`;
+                            const msgs = conv.messages.map(m => m.isThinking ? { ...m, isThinking: false, content: errorMessage } : m);
+                            return { ...conv, messages: msgs };
+                        }
+                        return conv;
+                    }));
+                    setTimeout(() => window.dispatchEvent(new Event('open-subscription-modal')), 1500);
+                    return; // Exit completely without throwing an error
+                }
+                throw new Error(`API Error: ${response.status}`);
+            }
+
+            if (decreaseToken) decreaseToken();
 
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
@@ -372,10 +388,12 @@ export function ChatProvider({ children }) {
             });
 
         } catch (error) {
-            console.error(error);
+            console.error('Chat stream error:', error);
+
             setConversations(prev => prev.map(conv => {
                 if (conv.id === conversationId) {
-                    const msgs = conv.messages.map(m => m.isThinking ? { ...m, isThinking: false, content: `**Error:** ${error.message}` } : m);
+                    let errorMessage = `**Error:** ${error.message}`;
+                    const msgs = conv.messages.map(m => m.isThinking ? { ...m, isThinking: false, content: errorMessage } : m);
                     return { ...conv, messages: msgs };
                 }
                 return conv;

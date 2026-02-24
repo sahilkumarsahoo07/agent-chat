@@ -38,6 +38,9 @@ export async function POST(request) {
                 email: true,
                 name: true,
                 avatar: true,
+                plan: true,
+                tokens: true,
+                tokenResetDate: true,
                 createdAt: true,
             },
         });

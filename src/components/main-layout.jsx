@@ -2,6 +2,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import Sidebar from './sidebar';
+import SubscriptionModal from './subscription-modal';
 import { useEffect } from 'react';
 
 export default function MainLayout({ children }) {
@@ -44,6 +45,7 @@ export default function MainLayout({ children }) {
             <main className="flex-1 flex flex-col min-w-0 min-h-0 relative">
                 {children}
             </main>
+            {!isAuthPage && <SubscriptionModal />}
         </div>
     );
 }

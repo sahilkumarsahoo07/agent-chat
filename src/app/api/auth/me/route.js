@@ -19,6 +19,9 @@ export async function GET(request) {
                 email: true,
                 name: true,
                 avatar: true,
+                plan: true,
+                tokens: true,
+                tokenResetDate: true,
                 createdAt: true,
                 _count: {
                     select: {

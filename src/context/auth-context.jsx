@@ -43,6 +43,10 @@ export function AuthProvider({ children }) {
         }
     };
 
+    const decreaseToken = () => {
+        setUser(prev => prev ? { ...prev, tokens: Math.max(0, prev.tokens - 1) } : prev);
+    };
+
     // Login
     const login = async (email, password, redirectPath = '/') => {
         const res = await fetch('/api/auth/login', {
@@ -92,7 +96,7 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, token, loading, login, register, logout, fetchUser, decreaseToken }}>
             {children}
         </AuthContext.Provider>
     );

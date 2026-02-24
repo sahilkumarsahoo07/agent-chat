@@ -39,6 +39,9 @@ export async function POST(request) {
                 email: user.email,
                 name: user.name,
                 avatar: user.avatar,
+                plan: user.plan,
+                tokens: user.tokens,
+                tokenResetDate: user.tokenResetDate,
             },
             token,
         });

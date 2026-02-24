@@ -1,4 +1,6 @@
 import { OpenAI } from 'openai';
+import { getAuthUser } from '@/lib/auth';
+import { checkAndDeductTokens } from '@/lib/token-utils';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -20,6 +22,22 @@ export const dynamic = 'force-dynamic';
 export async function POST(req) {
     let modelId = 'unknown';
     try {
+        const auth = getAuthUser(req);
+        if (!auth) {
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+        const tokenCheck = await checkAndDeductTokens(auth.userId);
+        if (!tokenCheck.allowed) {
+            return new Response(JSON.stringify({ error: tokenCheck.error }), {
+                status: 402, // 402 Payment Required
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
         const { messages, model, assistantId, projectInstructions } = await req.json();
         modelId = model;
 

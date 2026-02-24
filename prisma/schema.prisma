@@ -14,6 +14,9 @@ model User {
   name          String
   password      String
   avatar        String?
+  plan          String         @default("FREE")
+  tokens        Int            @default(20) // Default for free users
+  tokenResetDate DateTime      @default(now()) @map("token_reset_date")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
   conversations Conversation[]
