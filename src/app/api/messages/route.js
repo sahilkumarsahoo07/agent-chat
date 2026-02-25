@@ -16,7 +16,7 @@ export async function POST(request) {
 
         const { userId } = auth;
         const body = await request.json();
-        const { conversationId, content, role, modelName, parentId, siblingIds, reasoning, sources, attachmentName, attachmentType } = body;
+        const { conversationId, content, role, modelName, parentId, siblingIds, reasoning, sources, attachmentName, attachmentType, isStreaming } = body;
 
         if (!conversationId || !role) {
             return error('Missing required fields', 400);
@@ -65,6 +65,7 @@ export async function POST(request) {
                     sources,
                     attachmentName,
                     attachmentType,
+                    isStreaming: isStreaming || false,
                 },
             });
 

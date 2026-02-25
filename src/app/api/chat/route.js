@@ -165,41 +165,58 @@ export async function POST(req) {
         const stream = new ReadableStream({
             async start(controller) {
                 const encoder = new TextEncoder();
+                let isStreamClosed = false;
+
+                const safeEnqueue = (text) => {
+                    if (isStreamClosed) return;
+                    try {
+                        controller.enqueue(encoder.encode(text));
+                    } catch (e) {
+                        isStreamClosed = true; // Client disconnected
+                    }
+                };
+
                 try {
                     // Send sources first if available
                     if (sources.length > 0) {
                         const sourceData = JSON.stringify({ sources });
-                        controller.enqueue(encoder.encode(`__JSON_START__${sourceData}__JSON_END__`));
+                        safeEnqueue(`__JSON_START__${sourceData}__JSON_END__`);
                     }
 
                     let isThinking = false;
                     for await (const chunk of response) {
+                        if (isStreamClosed) break;
+
                         const content = chunk.choices[0]?.delta?.content || '';
                         const reasoning = chunk.choices[0]?.delta?.reasoning || chunk.choices[0]?.delta?.reasoning_content || '';
 
                         if (reasoning) {
                             if (!isThinking) {
-                                controller.enqueue(encoder.encode('__THINKING_START__'));
+                                safeEnqueue('__THINKING_START__');
                                 isThinking = true;
                             }
-                            controller.enqueue(encoder.encode(reasoning));
+                            safeEnqueue(reasoning);
                         } else if (isThinking) {
-                            controller.enqueue(encoder.encode('__THINKING_END__'));
+                            safeEnqueue('__THINKING_END__');
                             isThinking = false;
                         }
 
                         if (content) {
-                            controller.enqueue(encoder.encode(content));
+                            safeEnqueue(content);
                         }
                     }
-                    if (isThinking) {
-                        controller.enqueue(encoder.encode('__THINKING_END__'));
+                    if (isThinking && !isStreamClosed) {
+                        safeEnqueue('__THINKING_END__');
                     }
                 } catch (err) {
-                    console.error('Streaming error details:', err);
-                    controller.error(err);
+                    if (!isStreamClosed && err.code !== 'ERR_INVALID_STATE') {
+                        console.error('Streaming error details:', err);
+                        try { controller.error(err); } catch (_) { }
+                    }
                 } finally {
-                    controller.close();
+                    if (!isStreamClosed) {
+                        try { controller.close(); } catch (_) { }
+                    }
                 }
             },
         });

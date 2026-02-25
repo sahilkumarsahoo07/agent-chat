@@ -76,6 +76,49 @@ function cn(...inputs) {
 }
 
 
+
+// Live countdown timer shown inside the token-limit error message
+function CountdownTimer({ resetTime }) {
+    const calcRemaining = () => {
+        if (!resetTime) return null;
+        const diff = new Date(resetTime).getTime() - Date.now();
+        return diff > 0 ? diff : 0;
+    };
+
+    const [remaining, setRemaining] = useState(calcRemaining);
+
+    useEffect(() => {
+        if (!resetTime) return;
+        const timer = setInterval(() => {
+            const diff = new Date(resetTime).getTime() - Date.now();
+            setRemaining(diff > 0 ? diff : 0);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [resetTime]);
+
+    if (remaining === null) return null;
+
+    if (remaining === 0) {
+        return (
+            <span className="inline-flex items-center gap-1.5 text-green-400 font-semibold">
+                ✅ Tokens reset! Refresh the page to continue.
+            </span>
+        );
+    }
+
+    const totalSeconds = Math.floor(remaining / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+
+    return (
+        <span className="font-mono font-bold tabular-nums text-amber-400">
+            {pad(hours)}:{pad(minutes)}:{pad(seconds)}
+        </span>
+    );
+}
+
 function CollapsibleReasoning({ content, isThinking }) {
     const [isOpen, setIsOpen] = useState(isThinking);
 
@@ -976,7 +1019,15 @@ export default function ChatInterface() {
                                                                                             )}
                                                                                         </div>
                                                                                     )}
-                                                                                    <MarkdownContent content={msg.content.startsWith('**Error:**') ? msg.content.replace('**Error:**', '').trim() : msg.content} />
+                                                                                    <div className="flex flex-col gap-2">
+                                                                                        <MarkdownContent content={msg.content.startsWith('**Error:**') ? msg.content.replace('**Error:**', '').trim() : msg.content} />
+                                                                                        {msg.tokenResetTime && (
+                                                                                            <div className="flex items-center gap-1.5 text-[12px] text-[var(--sidebar-foreground)] opacity-60 mt-1">
+                                                                                                <span>⏱ Tokens reset in:</span>
+                                                                                                <CountdownTimer resetTime={msg.tokenResetTime} />
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
                                                                                 </div>
                                                                             )}
                                                                         </div>

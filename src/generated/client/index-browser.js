@@ -124,7 +124,10 @@ exports.Prisma.UserScalarFieldEnum = {
   tokens: 'tokens',
   tokenResetDate: 'tokenResetDate',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  stripeCustomerId: 'stripeCustomerId',
+  stripeSettings: 'stripeSettings',
+  stripeSubscriptionId: 'stripeSubscriptionId'
 };
 
 exports.Prisma.ConversationScalarFieldEnum = {
@@ -155,6 +158,7 @@ exports.Prisma.MessageScalarFieldEnum = {
   attachmentType: 'attachmentType',
   sources: 'sources',
   rating: 'rating',
+  isStreaming: 'isStreaming',
   createdAt: 'createdAt',
   conversationId: 'conversationId'
 };

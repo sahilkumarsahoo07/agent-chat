@@ -19,6 +19,9 @@ model User {
   tokenResetDate DateTime      @default(now()) @map("token_reset_date")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
+  stripeCustomerId String?     @map("stripe_customer_id")
+  stripeSettings   Json?       @map("stripe_settings")
+  stripeSubscriptionId String? @map("stripe_subscription_id")
   conversations Conversation[]
   assistants    Assistant[]
   projects      Project[]
@@ -63,6 +66,7 @@ model Message {
   attachmentType String?      @map("attachment_type")
   sources        Json?
   rating         String?      @map("rating")
+  isStreaming    Boolean      @default(false) @map("is_streaming")
   createdAt      DateTime     @default(now()) @map("created_at")
   conversationId String       @map("conversation_id") @db.ObjectId
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

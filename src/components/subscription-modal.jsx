@@ -76,10 +76,7 @@ export default function SubscriptionModal() {
         setIsLoading(planId);
 
         try {
-            // Mocking payment delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            const res = await fetch('/api/subscription', {
+            const res = await fetch('/api/stripe/create-checkout-session', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -90,17 +87,16 @@ export default function SubscriptionModal() {
 
             const data = await res.json();
 
-            if (data.success) {
-                showToast(`Successfully upgraded to ${planId} plan!`, 'success');
-                fetchUser(); // Refresh user data to get new token balance
-                setIsOpen(false);
+            if (data.success && data.url) {
+                // Redirect to the Stripe Checkout page
+                window.location.href = data.url;
             } else {
-                showToast(data.error || 'Upgrade failed', 'error');
+                showToast(data.error || 'Upgrade failed to initialize', 'error');
+                setIsLoading(null);
             }
         } catch (error) {
             console.error('Upgrade error:', error);
-            showToast('An error occurred during upgrade', 'error');
-        } finally {
+            showToast('An error occurred connecting to Stripe', 'error');
             setIsLoading(null);
         }
     };
@@ -212,7 +208,7 @@ export default function SubscriptionModal() {
                                 })}
                             </div>
                             <div className="mt-8 text-center text-xs text-[var(--muted-foreground)] opacity-70">
-                                Tokens automatically reset every 24 hours based on your plan tier.
+                                Tokens automatically reset every 4 hours based on your plan tier.
                             </div>
                         </div>
                     </motion.div>

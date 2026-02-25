@@ -1425,6 +1425,8 @@ export namespace Prisma {
     tokenResetDate: Date | null
     createdAt: Date | null
     updatedAt: Date | null
+    stripeCustomerId: string | null
+    stripeSubscriptionId: string | null
   }
 
   export type UserMaxAggregateOutputType = {
@@ -1438,6 +1440,8 @@ export namespace Prisma {
     tokenResetDate: Date | null
     createdAt: Date | null
     updatedAt: Date | null
+    stripeCustomerId: string | null
+    stripeSubscriptionId: string | null
   }
 
   export type UserCountAggregateOutputType = {
@@ -1451,6 +1455,9 @@ export namespace Prisma {
     tokenResetDate: number
     createdAt: number
     updatedAt: number
+    stripeCustomerId: number
+    stripeSettings: number
+    stripeSubscriptionId: number
     _all: number
   }
 
@@ -1474,6 +1481,8 @@ export namespace Prisma {
     tokenResetDate?: true
     createdAt?: true
     updatedAt?: true
+    stripeCustomerId?: true
+    stripeSubscriptionId?: true
   }
 
   export type UserMaxAggregateInputType = {
@@ -1487,6 +1496,8 @@ export namespace Prisma {
     tokenResetDate?: true
     createdAt?: true
     updatedAt?: true
+    stripeCustomerId?: true
+    stripeSubscriptionId?: true
   }
 
   export type UserCountAggregateInputType = {
@@ -1500,6 +1511,9 @@ export namespace Prisma {
     tokenResetDate?: true
     createdAt?: true
     updatedAt?: true
+    stripeCustomerId?: true
+    stripeSettings?: true
+    stripeSubscriptionId?: true
     _all?: true
   }
 
@@ -1600,6 +1614,9 @@ export namespace Prisma {
     tokenResetDate: Date
     createdAt: Date
     updatedAt: Date
+    stripeCustomerId: string | null
+    stripeSettings: JsonValue | null
+    stripeSubscriptionId: string | null
     _count: UserCountAggregateOutputType | null
     _avg: UserAvgAggregateOutputType | null
     _sum: UserSumAggregateOutputType | null
@@ -1632,6 +1649,9 @@ export namespace Prisma {
     tokenResetDate?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    stripeCustomerId?: boolean
+    stripeSettings?: boolean
+    stripeSubscriptionId?: boolean
     conversations?: boolean | User$conversationsArgs<ExtArgs>
     assistants?: boolean | User$assistantsArgs<ExtArgs>
     projects?: boolean | User$projectsArgs<ExtArgs>
@@ -1652,9 +1672,12 @@ export namespace Prisma {
     tokenResetDate?: boolean
     createdAt?: boolean
     updatedAt?: boolean
+    stripeCustomerId?: boolean
+    stripeSettings?: boolean
+    stripeSubscriptionId?: boolean
   }
 
-  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "name" | "password" | "avatar" | "plan" | "tokens" | "tokenResetDate" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+  export type UserOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "email" | "name" | "password" | "avatar" | "plan" | "tokens" | "tokenResetDate" | "createdAt" | "updatedAt" | "stripeCustomerId" | "stripeSettings" | "stripeSubscriptionId", ExtArgs["result"]["user"]>
   export type UserInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     conversations?: boolean | User$conversationsArgs<ExtArgs>
     assistants?: boolean | User$assistantsArgs<ExtArgs>
@@ -1682,6 +1705,9 @@ export namespace Prisma {
       tokenResetDate: Date
       createdAt: Date
       updatedAt: Date
+      stripeCustomerId: string | null
+      stripeSettings: Prisma.JsonValue | null
+      stripeSubscriptionId: string | null
     }, ExtArgs["result"]["user"]>
     composites: {}
   }
@@ -2088,6 +2114,9 @@ export namespace Prisma {
     readonly tokenResetDate: FieldRef<"User", 'DateTime'>
     readonly createdAt: FieldRef<"User", 'DateTime'>
     readonly updatedAt: FieldRef<"User", 'DateTime'>
+    readonly stripeCustomerId: FieldRef<"User", 'String'>
+    readonly stripeSettings: FieldRef<"User", 'Json'>
+    readonly stripeSubscriptionId: FieldRef<"User", 'String'>
   }
     
 
@@ -3736,6 +3765,7 @@ export namespace Prisma {
     attachmentName: string | null
     attachmentType: string | null
     rating: string | null
+    isStreaming: boolean | null
     createdAt: Date | null
     conversationId: string | null
   }
@@ -3751,6 +3781,7 @@ export namespace Prisma {
     attachmentName: string | null
     attachmentType: string | null
     rating: string | null
+    isStreaming: boolean | null
     createdAt: Date | null
     conversationId: string | null
   }
@@ -3768,6 +3799,7 @@ export namespace Prisma {
     attachmentType: number
     sources: number
     rating: number
+    isStreaming: number
     createdAt: number
     conversationId: number
     _all: number
@@ -3793,6 +3825,7 @@ export namespace Prisma {
     attachmentName?: true
     attachmentType?: true
     rating?: true
+    isStreaming?: true
     createdAt?: true
     conversationId?: true
   }
@@ -3808,6 +3841,7 @@ export namespace Prisma {
     attachmentName?: true
     attachmentType?: true
     rating?: true
+    isStreaming?: true
     createdAt?: true
     conversationId?: true
   }
@@ -3825,6 +3859,7 @@ export namespace Prisma {
     attachmentType?: true
     sources?: true
     rating?: true
+    isStreaming?: true
     createdAt?: true
     conversationId?: true
     _all?: true
@@ -3929,6 +3964,7 @@ export namespace Prisma {
     attachmentType: string | null
     sources: JsonValue | null
     rating: string | null
+    isStreaming: boolean
     createdAt: Date
     conversationId: string
     _count: MessageCountAggregateOutputType | null
@@ -3965,6 +4001,7 @@ export namespace Prisma {
     attachmentType?: boolean
     sources?: boolean
     rating?: boolean
+    isStreaming?: boolean
     createdAt?: boolean
     conversationId?: boolean
     conversation?: boolean | ConversationDefaultArgs<ExtArgs>
@@ -3985,11 +4022,12 @@ export namespace Prisma {
     attachmentType?: boolean
     sources?: boolean
     rating?: boolean
+    isStreaming?: boolean
     createdAt?: boolean
     conversationId?: boolean
   }
 
-  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "role" | "content" | "reasoning" | "modelName" | "parentId" | "siblingIds" | "version" | "attachmentName" | "attachmentType" | "sources" | "rating" | "createdAt" | "conversationId", ExtArgs["result"]["message"]>
+  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "role" | "content" | "reasoning" | "modelName" | "parentId" | "siblingIds" | "version" | "attachmentName" | "attachmentType" | "sources" | "rating" | "isStreaming" | "createdAt" | "conversationId", ExtArgs["result"]["message"]>
   export type MessageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     conversation?: boolean | ConversationDefaultArgs<ExtArgs>
   }
@@ -4012,6 +4050,7 @@ export namespace Prisma {
       attachmentType: string | null
       sources: Prisma.JsonValue | null
       rating: string | null
+      isStreaming: boolean
       createdAt: Date
       conversationId: string
     }, ExtArgs["result"]["message"]>
@@ -4419,6 +4458,7 @@ export namespace Prisma {
     readonly attachmentType: FieldRef<"Message", 'String'>
     readonly sources: FieldRef<"Message", 'Json'>
     readonly rating: FieldRef<"Message", 'String'>
+    readonly isStreaming: FieldRef<"Message", 'Boolean'>
     readonly createdAt: FieldRef<"Message", 'DateTime'>
     readonly conversationId: FieldRef<"Message", 'String'>
   }
@@ -8010,7 +8050,10 @@ export namespace Prisma {
     tokens: 'tokens',
     tokenResetDate: 'tokenResetDate',
     createdAt: 'createdAt',
-    updatedAt: 'updatedAt'
+    updatedAt: 'updatedAt',
+    stripeCustomerId: 'stripeCustomerId',
+    stripeSettings: 'stripeSettings',
+    stripeSubscriptionId: 'stripeSubscriptionId'
   };
 
   export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
@@ -8047,6 +8090,7 @@ export namespace Prisma {
     attachmentType: 'attachmentType',
     sources: 'sources',
     rating: 'rating',
+    isStreaming: 'isStreaming',
     createdAt: 'createdAt',
     conversationId: 'conversationId'
   };
@@ -8169,16 +8213,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Boolean'
+   * Reference to a field of type 'Json'
    */
-  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
     
 
 
   /**
-   * Reference to a field of type 'Json'
+   * Reference to a field of type 'Boolean'
    */
-  export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+  export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -8213,6 +8257,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFilter<"User"> | Date | string
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
+    stripeCustomerId?: StringNullableFilter<"User"> | string | null
+    stripeSettings?: JsonNullableFilter<"User">
+    stripeSubscriptionId?: StringNullableFilter<"User"> | string | null
     conversations?: ConversationListRelationFilter
     assistants?: AssistantListRelationFilter
     projects?: ProjectListRelationFilter
@@ -8230,6 +8277,9 @@ export namespace Prisma {
     tokenResetDate?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    stripeCustomerId?: SortOrder
+    stripeSettings?: SortOrder
+    stripeSubscriptionId?: SortOrder
     conversations?: ConversationOrderByRelationAggregateInput
     assistants?: AssistantOrderByRelationAggregateInput
     projects?: ProjectOrderByRelationAggregateInput
@@ -8250,6 +8300,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFilter<"User"> | Date | string
     createdAt?: DateTimeFilter<"User"> | Date | string
     updatedAt?: DateTimeFilter<"User"> | Date | string
+    stripeCustomerId?: StringNullableFilter<"User"> | string | null
+    stripeSettings?: JsonNullableFilter<"User">
+    stripeSubscriptionId?: StringNullableFilter<"User"> | string | null
     conversations?: ConversationListRelationFilter
     assistants?: AssistantListRelationFilter
     projects?: ProjectListRelationFilter
@@ -8267,6 +8320,9 @@ export namespace Prisma {
     tokenResetDate?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    stripeCustomerId?: SortOrder
+    stripeSettings?: SortOrder
+    stripeSubscriptionId?: SortOrder
     _count?: UserCountOrderByAggregateInput
     _avg?: UserAvgOrderByAggregateInput
     _max?: UserMaxOrderByAggregateInput
@@ -8288,6 +8344,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeWithAggregatesFilter<"User"> | Date | string
     createdAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"User"> | Date | string
+    stripeCustomerId?: StringNullableWithAggregatesFilter<"User"> | string | null
+    stripeSettings?: JsonNullableWithAggregatesFilter<"User">
+    stripeSubscriptionId?: StringNullableWithAggregatesFilter<"User"> | string | null
   }
 
   export type ConversationWhereInput = {
@@ -8405,6 +8464,7 @@ export namespace Prisma {
     attachmentType?: StringNullableFilter<"Message"> | string | null
     sources?: JsonNullableFilter<"Message">
     rating?: StringNullableFilter<"Message"> | string | null
+    isStreaming?: BoolFilter<"Message"> | boolean
     createdAt?: DateTimeFilter<"Message"> | Date | string
     conversationId?: StringFilter<"Message"> | string
     conversation?: XOR<ConversationScalarRelationFilter, ConversationWhereInput>
@@ -8423,6 +8483,7 @@ export namespace Prisma {
     attachmentType?: SortOrder
     sources?: SortOrder
     rating?: SortOrder
+    isStreaming?: SortOrder
     createdAt?: SortOrder
     conversationId?: SortOrder
     conversation?: ConversationOrderByWithRelationInput
@@ -8444,6 +8505,7 @@ export namespace Prisma {
     attachmentType?: StringNullableFilter<"Message"> | string | null
     sources?: JsonNullableFilter<"Message">
     rating?: StringNullableFilter<"Message"> | string | null
+    isStreaming?: BoolFilter<"Message"> | boolean
     createdAt?: DateTimeFilter<"Message"> | Date | string
     conversationId?: StringFilter<"Message"> | string
     conversation?: XOR<ConversationScalarRelationFilter, ConversationWhereInput>
@@ -8462,6 +8524,7 @@ export namespace Prisma {
     attachmentType?: SortOrder
     sources?: SortOrder
     rating?: SortOrder
+    isStreaming?: SortOrder
     createdAt?: SortOrder
     conversationId?: SortOrder
     _count?: MessageCountOrderByAggregateInput
@@ -8487,6 +8550,7 @@ export namespace Prisma {
     attachmentType?: StringNullableWithAggregatesFilter<"Message"> | string | null
     sources?: JsonNullableWithAggregatesFilter<"Message">
     rating?: StringNullableWithAggregatesFilter<"Message"> | string | null
+    isStreaming?: BoolWithAggregatesFilter<"Message"> | boolean
     createdAt?: DateTimeWithAggregatesFilter<"Message"> | Date | string
     conversationId?: StringWithAggregatesFilter<"Message"> | string
   }
@@ -8765,6 +8829,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
     conversations?: ConversationCreateNestedManyWithoutUserInput
     assistants?: AssistantCreateNestedManyWithoutUserInput
     projects?: ProjectCreateNestedManyWithoutUserInput
@@ -8782,6 +8849,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
     conversations?: ConversationUncheckedCreateNestedManyWithoutUserInput
     assistants?: AssistantUncheckedCreateNestedManyWithoutUserInput
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
@@ -8798,6 +8868,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     conversations?: ConversationUpdateManyWithoutUserNestedInput
     assistants?: AssistantUpdateManyWithoutUserNestedInput
     projects?: ProjectUpdateManyWithoutUserNestedInput
@@ -8814,6 +8887,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     conversations?: ConversationUncheckedUpdateManyWithoutUserNestedInput
     assistants?: AssistantUncheckedUpdateManyWithoutUserNestedInput
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
@@ -8831,6 +8907,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
   }
 
   export type UserUpdateManyMutationInput = {
@@ -8843,6 +8922,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type UserUncheckedUpdateManyInput = {
@@ -8855,6 +8937,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ConversationCreateInput = {
@@ -8977,6 +9062,7 @@ export namespace Prisma {
     attachmentType?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
+    isStreaming?: boolean
     createdAt?: Date | string
     conversation: ConversationCreateNestedOneWithoutMessagesInput
   }
@@ -8994,6 +9080,7 @@ export namespace Prisma {
     attachmentType?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
+    isStreaming?: boolean
     createdAt?: Date | string
     conversationId: string
   }
@@ -9010,6 +9097,7 @@ export namespace Prisma {
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
+    isStreaming?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     conversation?: ConversationUpdateOneRequiredWithoutMessagesNestedInput
   }
@@ -9026,6 +9114,7 @@ export namespace Prisma {
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
+    isStreaming?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     conversationId?: StringFieldUpdateOperationsInput | string
   }
@@ -9043,6 +9132,7 @@ export namespace Prisma {
     attachmentType?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
+    isStreaming?: boolean
     createdAt?: Date | string
     conversationId: string
   }
@@ -9059,6 +9149,7 @@ export namespace Prisma {
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
+    isStreaming?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -9074,6 +9165,7 @@ export namespace Prisma {
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
+    isStreaming?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     conversationId?: StringFieldUpdateOperationsInput | string
   }
@@ -9412,6 +9504,18 @@ export namespace Prisma {
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string
   }
+  export type JsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    isSet?: boolean
+  }
 
   export type ConversationListRelationFilter = {
     every?: ConversationWhereInput
@@ -9464,6 +9568,9 @@ export namespace Prisma {
     tokenResetDate?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    stripeCustomerId?: SortOrder
+    stripeSettings?: SortOrder
+    stripeSubscriptionId?: SortOrder
   }
 
   export type UserAvgOrderByAggregateInput = {
@@ -9481,6 +9588,8 @@ export namespace Prisma {
     tokenResetDate?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    stripeCustomerId?: SortOrder
+    stripeSubscriptionId?: SortOrder
   }
 
   export type UserMinOrderByAggregateInput = {
@@ -9494,6 +9603,8 @@ export namespace Prisma {
     tokenResetDate?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
+    stripeCustomerId?: SortOrder
+    stripeSubscriptionId?: SortOrder
   }
 
   export type UserSumOrderByAggregateInput = {
@@ -9565,6 +9676,21 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
+  }
+  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
+        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
+
+  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedJsonNullableFilter<$PrismaModel>
+    _max?: NestedJsonNullableFilter<$PrismaModel>
+    isSet?: boolean
   }
 
   export type BoolFilter<$PrismaModel = never> = {
@@ -9650,18 +9776,6 @@ export namespace Prisma {
     _min?: NestedBoolFilter<$PrismaModel>
     _max?: NestedBoolFilter<$PrismaModel>
   }
-  export type JsonNullableFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    isSet?: boolean
-  }
 
   export type ConversationScalarRelationFilter = {
     is?: ConversationWhereInput
@@ -9681,6 +9795,7 @@ export namespace Prisma {
     attachmentType?: SortOrder
     sources?: SortOrder
     rating?: SortOrder
+    isStreaming?: SortOrder
     createdAt?: SortOrder
     conversationId?: SortOrder
   }
@@ -9700,6 +9815,7 @@ export namespace Prisma {
     attachmentName?: SortOrder
     attachmentType?: SortOrder
     rating?: SortOrder
+    isStreaming?: SortOrder
     createdAt?: SortOrder
     conversationId?: SortOrder
   }
@@ -9715,27 +9831,13 @@ export namespace Prisma {
     attachmentName?: SortOrder
     attachmentType?: SortOrder
     rating?: SortOrder
+    isStreaming?: SortOrder
     createdAt?: SortOrder
     conversationId?: SortOrder
   }
 
   export type MessageSumOrderByAggregateInput = {
     version?: SortOrder
-  }
-  export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>,
-        Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<JsonNullableWithAggregatesFilterBase<$PrismaModel>>, 'path'>>
-
-  export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedJsonNullableFilter<$PrismaModel>
-    _max?: NestedJsonNullableFilter<$PrismaModel>
-    isSet?: boolean
   }
 
   export type FloatFilter<$PrismaModel = never> = {
@@ -10533,6 +10635,18 @@ export namespace Prisma {
     _min?: NestedDateTimeFilter<$PrismaModel>
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
+  export type NestedJsonNullableFilter<$PrismaModel = never> =
+    | PatchUndefined<
+        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
+        Required<NestedJsonNullableFilterBase<$PrismaModel>>
+      >
+    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
+
+  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
+    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
+    isSet?: boolean
+  }
 
   export type NestedBoolFilter<$PrismaModel = never> = {
     equals?: boolean | BooleanFieldRefInput<$PrismaModel>
@@ -10545,18 +10659,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedBoolFilter<$PrismaModel>
     _max?: NestedBoolFilter<$PrismaModel>
-  }
-  export type NestedJsonNullableFilter<$PrismaModel = never> =
-    | PatchUndefined<
-        Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
-        Required<NestedJsonNullableFilterBase<$PrismaModel>>
-      >
-    | OptionalFlat<Omit<Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>
-
-  export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
-    equals?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    not?: InputJsonValue | JsonFieldRefInput<$PrismaModel> | null
-    isSet?: boolean
   }
 
   export type NestedFloatWithAggregatesFilter<$PrismaModel = never> = {
@@ -10894,6 +10996,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
     assistants?: AssistantCreateNestedManyWithoutUserInput
     projects?: ProjectCreateNestedManyWithoutUserInput
     sharedChats?: SharedChatCreateNestedManyWithoutCreatorInput
@@ -10910,6 +11015,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
     assistants?: AssistantUncheckedCreateNestedManyWithoutUserInput
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     sharedChats?: SharedChatUncheckedCreateNestedManyWithoutCreatorInput
@@ -10964,6 +11072,7 @@ export namespace Prisma {
     attachmentType?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
+    isStreaming?: boolean
     createdAt?: Date | string
   }
 
@@ -10980,6 +11089,7 @@ export namespace Prisma {
     attachmentType?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
+    isStreaming?: boolean
     createdAt?: Date | string
   }
 
@@ -11044,6 +11154,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     assistants?: AssistantUpdateManyWithoutUserNestedInput
     projects?: ProjectUpdateManyWithoutUserNestedInput
     sharedChats?: SharedChatUpdateManyWithoutCreatorNestedInput
@@ -11059,6 +11172,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     assistants?: AssistantUncheckedUpdateManyWithoutUserNestedInput
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     sharedChats?: SharedChatUncheckedUpdateManyWithoutCreatorNestedInput
@@ -11131,6 +11247,7 @@ export namespace Prisma {
     attachmentType?: StringNullableFilter<"Message"> | string | null
     sources?: JsonNullableFilter<"Message">
     rating?: StringNullableFilter<"Message"> | string | null
+    isStreaming?: BoolFilter<"Message"> | boolean
     createdAt?: DateTimeFilter<"Message"> | Date | string
     conversationId?: StringFilter<"Message"> | string
   }
@@ -11240,6 +11357,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
     conversations?: ConversationCreateNestedManyWithoutUserInput
     projects?: ProjectCreateNestedManyWithoutUserInput
     sharedChats?: SharedChatCreateNestedManyWithoutCreatorInput
@@ -11256,6 +11376,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
     conversations?: ConversationUncheckedCreateNestedManyWithoutUserInput
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
     sharedChats?: SharedChatUncheckedCreateNestedManyWithoutCreatorInput
@@ -11287,6 +11410,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     conversations?: ConversationUpdateManyWithoutUserNestedInput
     projects?: ProjectUpdateManyWithoutUserNestedInput
     sharedChats?: SharedChatUpdateManyWithoutCreatorNestedInput
@@ -11302,6 +11428,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     conversations?: ConversationUncheckedUpdateManyWithoutUserNestedInput
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
     sharedChats?: SharedChatUncheckedUpdateManyWithoutCreatorNestedInput
@@ -11318,6 +11447,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
     conversations?: ConversationCreateNestedManyWithoutUserInput
     assistants?: AssistantCreateNestedManyWithoutUserInput
     sharedChats?: SharedChatCreateNestedManyWithoutCreatorInput
@@ -11334,6 +11466,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
     conversations?: ConversationUncheckedCreateNestedManyWithoutUserInput
     assistants?: AssistantUncheckedCreateNestedManyWithoutUserInput
     sharedChats?: SharedChatUncheckedCreateNestedManyWithoutCreatorInput
@@ -11406,6 +11541,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     conversations?: ConversationUpdateManyWithoutUserNestedInput
     assistants?: AssistantUpdateManyWithoutUserNestedInput
     sharedChats?: SharedChatUpdateManyWithoutCreatorNestedInput
@@ -11421,6 +11559,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     conversations?: ConversationUncheckedUpdateManyWithoutUserNestedInput
     assistants?: AssistantUncheckedUpdateManyWithoutUserNestedInput
     sharedChats?: SharedChatUncheckedUpdateManyWithoutCreatorNestedInput
@@ -11453,6 +11594,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
     conversations?: ConversationCreateNestedManyWithoutUserInput
     assistants?: AssistantCreateNestedManyWithoutUserInput
     projects?: ProjectCreateNestedManyWithoutUserInput
@@ -11469,6 +11613,9 @@ export namespace Prisma {
     tokenResetDate?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    stripeCustomerId?: string | null
+    stripeSettings?: InputJsonValue | null
+    stripeSubscriptionId?: string | null
     conversations?: ConversationUncheckedCreateNestedManyWithoutUserInput
     assistants?: AssistantUncheckedCreateNestedManyWithoutUserInput
     projects?: ProjectUncheckedCreateNestedManyWithoutUserInput
@@ -11537,6 +11684,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     conversations?: ConversationUpdateManyWithoutUserNestedInput
     assistants?: AssistantUpdateManyWithoutUserNestedInput
     projects?: ProjectUpdateManyWithoutUserNestedInput
@@ -11552,6 +11702,9 @@ export namespace Prisma {
     tokenResetDate?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
+    stripeSettings?: InputJsonValue | InputJsonValue | null
+    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     conversations?: ConversationUncheckedUpdateManyWithoutUserNestedInput
     assistants?: AssistantUncheckedUpdateManyWithoutUserNestedInput
     projects?: ProjectUncheckedUpdateManyWithoutUserNestedInput
@@ -11817,6 +11970,7 @@ export namespace Prisma {
     attachmentType?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
+    isStreaming?: boolean
     createdAt?: Date | string
   }
 
@@ -11843,6 +11997,7 @@ export namespace Prisma {
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
+    isStreaming?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -11858,6 +12013,7 @@ export namespace Prisma {
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
+    isStreaming?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -11873,6 +12029,7 @@ export namespace Prisma {
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
+    isStreaming?: BoolFieldUpdateOperationsInput | boolean
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

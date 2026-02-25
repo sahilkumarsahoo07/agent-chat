@@ -63,6 +63,7 @@ model Message {
   attachmentType String?      @map("attachment_type")
   sources        Json?
   rating         String?      @map("rating")
+  isStreaming    Boolean      @default(false) @map("is_streaming")
   createdAt      DateTime     @default(now()) @map("created_at")
   conversationId String       @map("conversation_id") @db.ObjectId
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

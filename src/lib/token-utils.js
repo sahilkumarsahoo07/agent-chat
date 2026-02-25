@@ -1,17 +1,22 @@
 import prisma from '@/lib/prisma';
 
 export const PLAN_LIMITS = {
-    FREE: 10,  // Reduced for testing, as requested "very low tokens"
+    FREE: 10,  // Reduced for testing
     PLUS: 500,
     PRO: 2000,
 };
 
+// Token reset window: 4 hours from the moment tokens are depleted
+const TOKEN_RESET_MS = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+
 /**
- * Checks if the user's token reset date was yesterday or earlier.
+ * Checks if 4 hours have elapsed since the user's tokenResetDate.
  * Resets tokens to their plan limit if so.
+ * When tokens first hit 0 it stamps tokenResetDate so the 4-hour window starts
+ * from the exact depletion moment.
  * Deducts 1 token if available.
  * @param {string} userId - The ID of the authenticated user
- * @returns {object} { allowed: boolean, remaining: number, error: string }
+ * @returns {object} { allowed: boolean, remaining: number, error: string, resetTime: Date }
  */
 export async function checkAndDeductTokens(userId) {
     try {
@@ -26,46 +31,44 @@ export async function checkAndDeductTokens(userId) {
 
         const now = new Date();
         const lastReset = user.tokenResetDate || now;
-
-        // Check if the reset date is from a previous day
-        // A simple way is to compare toDateString() OR calculate 24h diff.
-        // We will use 24h diff for a rolling 24 hour reset, or calendar day reset.
-        // Request: "after 1day meand if the token is complete now so next day this time the token will be generate"
-        // This implies rolling 24 hours.
-        const msIn24Hours = 24 * 60 * 60 * 1000;
         const timeSinceLastReset = now.getTime() - lastReset.getTime();
 
         let currentTokens = user.tokens;
         let newResetDate = lastReset;
         let requiresReset = false;
 
-        if (timeSinceLastReset >= msIn24Hours) {
-            // 24 hours have passed, reset tokens to max
+        if (timeSinceLastReset >= TOKEN_RESET_MS) {
+            // 4 hours have passed since the last reset — refill tokens
             const plan = user.plan || 'FREE';
             currentTokens = PLAN_LIMITS[plan] || PLAN_LIMITS.FREE;
-            newResetDate = now; // update reset time to now
+            newResetDate = now; // next reset window starts now
             requiresReset = true;
         }
 
         if (currentTokens <= 0 && !requiresReset) {
-            // Not enough tokens and not eligible for reset yet
+            // Tokens are depleted — return the exact time they will reset
+            const resetTime = new Date(lastReset.getTime() + TOKEN_RESET_MS);
             return {
                 allowed: false,
-                error: 'Token limit reached. Please upgrade your plan or wait 24 hours.',
+                error: 'Token limit reached.',
                 remaining: 0,
-                resetTime: new Date(lastReset.getTime() + msIn24Hours)
+                resetTime: resetTime.toISOString(),
             };
         }
 
         // Deduct 1 token
         const newTokens = currentTokens - 1;
 
-        // Save to database
+        // When tokens just hit 0 for the first time, stamp the depletion time
+        // so the 4-hour countdown starts from this moment.
+        const justDepleted = newTokens === 0;
+
         await prisma.user.update({
             where: { id: userId },
             data: {
                 tokens: newTokens,
-                ...(requiresReset && { tokenResetDate: newResetDate })
+                // Update resetDate on: reset OR first depletion
+                ...((requiresReset || justDepleted) && { tokenResetDate: now })
             }
         });
 

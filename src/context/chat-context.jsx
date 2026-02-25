@@ -24,6 +24,8 @@ export function ChatProvider({ children }) {
     const [selectedAssistantId, setSelectedAssistantId] = useState(null);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const abortControllers = useRef({});
+    const autoResumedConvs = useRef(new Set()); // Track which conversations were already auto-resumed
+    const fetchOpenAIResponseRef = useRef(null); // Ref to avoid TDZ in conversation-load useEffect
 
     const activeProject = projects.find(p => p.id === activeProjectId);
 
@@ -43,16 +45,26 @@ export function ChatProvider({ children }) {
             const asstData = await asstRes.json();
 
             if (convData.success) {
-                setConversations(convData.data.map(c => ({
-                    ...c,
-                    messages: [],
-                    allMessages: [],
-                    lastActivityAt: c.messages?.[0]?.createdAt ? new Date(c.messages[0].createdAt) : new Date(c.updatedAt),
-                    createdAt: new Date(c.createdAt),
-                    updatedAt: new Date(c.updatedAt),
-                    activePath: c.activePath || [],
-                    isLoaded: false
-                })));
+                setConversations(prev => {
+                    return convData.data.map(c => {
+                        const existing = prev.find(p => p.id === c.id);
+                        // If this chat is already fully loaded in memory, preserve its rich details and arrays
+                        if (existing && existing.isLoaded) {
+                            return { ...existing, title: c.title, updatedAt: new Date(c.updatedAt) };
+                        }
+                        // Otherwise, initialize it as a shallow list item
+                        return {
+                            ...c,
+                            messages: [],
+                            allMessages: [],
+                            lastActivityAt: c.messages?.[0]?.createdAt ? new Date(c.messages[0].createdAt) : new Date(c.updatedAt),
+                            createdAt: new Date(c.createdAt),
+                            updatedAt: new Date(c.updatedAt),
+                            activePath: c.activePath || [],
+                            isLoaded: false
+                        };
+                    });
+                });
             }
             if (projData.success) {
                 setProjects(projData.data.map(p => {
@@ -104,63 +116,161 @@ export function ChatProvider({ children }) {
         }
     }, [params?.id]);
 
+    const activeConvFetchControl = useRef({ id: null, fetching: false });
+
     // Fetch active conversation details
     useEffect(() => {
-        if (activeConversationId && activeConversationId !== 'new-chat' && token) {
-            // Check if we already have this conversation loaded
-            const existingIndex = conversations.findIndex(c => c.id === activeConversationId);
-            const existing = existingIndex >= 0 ? conversations[existingIndex] : null;
+        if (!activeConversationId || activeConversationId === 'new-chat' || !token) return;
 
-            if (!existing || !existing.isLoaded) {
-                fetch(`/api/conversations/${activeConversationId}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            const fullConv = data.data;
+        const existingIndex = conversations.findIndex(c => c.id === activeConversationId);
+        const existing = existingIndex >= 0 ? conversations[existingIndex] : null;
 
-                            const processConv = (convData) => {
-                                const allMessages = (convData.allMessages || convData.messages || []).map(m => ({
-                                    ...m,
-                                    timestamp: new Date(m.createdAt || m.timestamp || 0),
-                                    isThinking: false
-                                }));
+        // If we already fully loaded it (has messages parsed, etc), don't fetch again
+        if (existing && existing.isLoaded) return;
 
-                                const activePathIds = convData.activePath && convData.activePath.length > 0
-                                    ? convData.activePath
-                                    : (convData.messages || []).map(m => m.id);
+        // Prevent concurrent identical fetches
+        if (activeConvFetchControl.current.id === activeConversationId && activeConvFetchControl.current.fetching) return;
 
-                                const activeMessages = activePathIds.map(id => allMessages.find(m => m.id === id)).filter(Boolean);
+        activeConvFetchControl.current = { id: activeConversationId, fetching: true };
 
-                                return {
-                                    ...convData,
-                                    messages: activeMessages,
-                                    allMessages: allMessages,
-                                    activePath: activePathIds,
-                                    isLoaded: true
-                                };
-                            };
+        fetch(`/api/conversations/${activeConversationId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(data => {
+                activeConvFetchControl.current.fetching = false;
+                if (!data.success) return;
 
-                            const processed = processConv(fullConv);
+                const fullConv = data.data;
 
-                            setConversations(prev => {
-                                const index = prev.findIndex(c => c.id === activeConversationId);
-                                if (index >= 0) {
-                                    const newConvs = [...prev];
-                                    newConvs[index] = { ...newConvs[index], ...processed };
-                                    return newConvs;
-                                } else {
-                                    // If not found, append it (handles direct link to unlisted chat)
-                                    return [processed, ...prev];
-                                }
-                            });
+                const processConv = (convData) => {
+                    const allMessages = (convData.allMessages || convData.messages || []).map(m => ({
+                        ...m,
+                        timestamp: new Date(m.createdAt || m.timestamp || 0),
+                        isThinking: false,
+                        isStreaming: m.isStreaming || false,
+                    }));
+
+                    const activePathIds = convData.activePath && convData.activePath.length > 0
+                        ? convData.activePath
+                        : (convData.messages || []).map(m => m.id);
+
+                    const activeMessages = activePathIds.map(id => allMessages.find(m => m.id === id)).filter(Boolean);
+
+                    return {
+                        ...convData,
+                        messages: activeMessages,
+                        allMessages: allMessages,
+                        activePath: activePathIds,
+                        isLoaded: true
+                    };
+                };
+
+                const processed = processConv(fullConv);
+
+                const lastActiveMsg = processed.messages[processed.messages.length - 1];
+                const wasInterrupted = lastActiveMsg?.isStreaming === true && lastActiveMsg?.role === 'assistant';
+
+                if (wasInterrupted) {
+                    if (!autoResumedConvs.current.has(activeConversationId)) {
+                        autoResumedConvs.current.add(activeConversationId);
+                        const interruptedMsgId = lastActiveMsg.id;
+
+                        const cleanedMessages = processed.messages.slice(0, -1);
+                        const cleanedAllMessages = processed.allMessages.filter(m => m.id !== interruptedMsgId);
+                        const cleanedActivePath = processed.activePath.filter(id => id !== interruptedMsgId);
+
+                        const lastUserMsg = cleanedMessages[cleanedMessages.length - 1];
+
+                        const aiPlaceholderId = 'temp-ai-resume-' + Date.now();
+                        const aiPlaceholder = {
+                            id: aiPlaceholderId,
+                            role: 'assistant',
+                            content: '',
+                            isThinking: true,
+                            timestamp: new Date(),
+                            parentId: lastUserMsg?.id || null,
+                        };
+
+                        const resumedConv = {
+                            ...processed,
+                            messages: [...cleanedMessages, aiPlaceholder],
+                            allMessages: [...cleanedAllMessages, aiPlaceholder],
+                            activePath: [...cleanedActivePath, aiPlaceholderId],
+                            isLoaded: true
+                        };
+
+                        setConversations(prev => {
+                            const index = prev.findIndex(c => c.id === activeConversationId);
+                            if (index >= 0) {
+                                const newConvs = [...prev];
+                                newConvs[index] = { ...newConvs[index], ...resumedConv };
+                                return newConvs;
+                            }
+                            return [resumedConv, ...prev];
+                        });
+
+                        fetch(`/api/messages/${interruptedMsgId}`, {
+                            method: 'DELETE',
+                            headers: { Authorization: `Bearer ${token}` },
+                        }).catch(() => { });
+
+                        const historyForAI = cleanedMessages.map(m => ({
+                            id: m.id,
+                            role: m.role,
+                            content: m.content,
+                        }));
+
+                        setTimeout(() => {
+                            if (fetchOpenAIResponseRef.current) {
+                                fetchOpenAIResponseRef.current(
+                                    activeConversationId,
+                                    historyForAI,
+                                    processed.modelId || fullConv.modelId || 'gpt-4o',
+                                    processed.modelName || fullConv.modelName || 'GPT-4o',
+                                    null,
+                                    processed.assistantId || null,
+                                    aiPlaceholderId
+                                );
+                            }
+                        }, 100);
+                    }
+                } else {
+                    setConversations(prev => {
+                        const index = prev.findIndex(c => c.id === activeConversationId);
+                        if (index >= 0) {
+                            const newConvs = [...prev];
+                            newConvs[index] = { ...newConvs[index], ...processed, isLoaded: true };
+                            return newConvs;
+                        } else {
+                            return [{ ...processed, isLoaded: true }, ...prev];
                         }
-                    })
-                    .catch(err => console.error('Failed to fetch active conversation', err));
-            }
-        }
+                    });
+                }
+            })
+            .catch(err => {
+                activeConvFetchControl.current.fetching = false;
+                console.error('Failed to fetch active conversation', err);
+            });
     }, [activeConversationId, token, conversations]);
+
+    // Root list fetch clobbers isLoaded safety fallback
+    useEffect(() => {
+        if (!activeConversationId || activeConversationId === 'new-chat') return;
+        const c = conversations.find(x => x.id === activeConversationId);
+        // If we know we fetched it (the ref has it) but the root list forcibly reverted isLoaded...
+        if (c && !c.isLoaded && activeConvFetchControl.current.id === activeConversationId && !activeConvFetchControl.current.fetching) {
+            setConversations(prev => {
+                const idx = prev.findIndex(x => x.id === activeConversationId);
+                if (idx >= 0 && !prev[idx].isLoaded) {
+                    const next = [...prev];
+                    next[idx] = { ...next[idx], isLoaded: true };
+                    return next;
+                }
+                return prev;
+            });
+        }
+    }, [conversations, activeConversationId]);
 
     // LocalStorage for Active Assistants preference
     useEffect(() => {
@@ -180,6 +290,26 @@ export function ChatProvider({ children }) {
     // --- 2. Core Actions ---
 
     const fetchOpenAIResponse = useCallback(async (conversationId, messages, modelId, modelName, projectInstructions, assistantId, targetMsgId) => {
+        let realAiMsgId = null; // The real DB id we create before streaming
+        let fullContent = '';
+        let reasoningContent = '';
+
+        // Helper to persist the current accumulated content to DB
+        const persistToDb = async (streaming) => {
+            if (!realAiMsgId) return;
+            try {
+                await fetch(`/api/messages/${realAiMsgId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({
+                        content: fullContent,
+                        reasoning: reasoningContent || undefined,
+                        isStreaming: streaming,
+                    })
+                });
+            } catch (_) { /* best-effort: don't throw */ }
+        };
+
         try {
             const controller = new AbortController();
             abortControllers.current[conversationId] = controller;
@@ -194,11 +324,47 @@ export function ChatProvider({ children }) {
 
             if (!response.ok) {
                 if (response.status === 402) {
+                    // Parse the resetTime from the backend so we can show a live countdown
+                    let resetTime = null;
+                    try {
+                        const errBody = await response.json();
+                        resetTime = errBody.resetTime || null;
+                    } catch (_) { }
+
                     setConversations(prev => prev.map(conv => {
                         if (conv.id === conversationId) {
                             const errorMessage = `You've reached your daily token limit for this plan! 🚀\n\nPlease **Upgrade Your Plan** to get more tokens instantly, or wait until your tokens automatically reset.`;
-                            const msgs = conv.messages.map(m => m.isThinking ? { ...m, isThinking: false, content: errorMessage } : m);
-                            return { ...conv, messages: msgs };
+
+                            // Find the isThinking placeholder to get its parentId
+                            const thinkingMsg = conv.messages.find(m => m.isThinking);
+                            const errorMsgParentId = thinkingMsg?.parentId || null;
+
+                            // Build a stable error message (not a temp ID) to replace the placeholder
+                            const errorMsgId = 'error-token-' + Date.now();
+                            const errorMsg = {
+                                id: errorMsgId,
+                                role: 'assistant',
+                                content: errorMessage,
+                                isThinking: false,
+                                timestamp: new Date(),
+                                parentId: errorMsgParentId,
+                                // Store the exact reset time so the UI can render a live countdown
+                                tokenResetTime: resetTime,
+                            };
+
+                            // Remove the isThinking placeholder and add the error message
+                            const msgs = conv.messages
+                                .filter(m => !m.isThinking)
+                                .concat(errorMsg);
+                            const allMsgs = conv.allMessages
+                                .filter(m => !m.isThinking)
+                                .concat(errorMsg);
+                            // Fix activePath: replace the temp AI id with the error message id
+                            const activePath = conv.activePath
+                                .filter(id => !conv.allMessages.find(m => m.id === id && m.isThinking))
+                                .concat(errorMsgId);
+
+                            return { ...conv, messages: msgs, allMessages: allMsgs, activePath };
                         }
                         return conv;
                     }));
@@ -210,11 +376,42 @@ export function ChatProvider({ children }) {
 
             if (decreaseToken) decreaseToken();
 
+            // ─── Pre-create the AI message in DB BEFORE streaming starts ───────────
+            // This makes the message persist even if the user refreshes mid-stream.
+            const lastMsg = messages[messages.length - 1]; // user message provides parentId
+            try {
+                const preCreateRes = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({
+                        conversationId,
+                        role: 'assistant',
+                        content: '',
+                        modelName,
+                        parentId: lastMsg.id,
+                        isStreaming: true, // Mark as in-progress
+                    })
+                });
+                const preCreateData = await preCreateRes.json();
+                if (preCreateData.success && preCreateData.data?.id) {
+                    realAiMsgId = preCreateData.data.id;
+
+                    // Update the temp placeholder ID in UI state with the real DB id
+                    setConversations(prev => prev.map(conv => {
+                        if (conv.id !== conversationId) return conv;
+                        const tempId = targetMsgId;
+                        const newMsgs = conv.messages.map(m => m.id === tempId ? { ...m, id: realAiMsgId } : m);
+                        const newAllMsgs = conv.allMessages.map(m => m.id === tempId ? { ...m, id: realAiMsgId } : m);
+                        const newActivePath = (conv.activePath || []).map(id => id === tempId ? realAiMsgId : id);
+                        return { ...conv, messages: newMsgs, allMessages: newAllMsgs, activePath: newActivePath };
+                    }));
+                }
+            } catch (_) { /* If pre-create fails, we fall back to saving at the end */ }
+            // ────────────────────────────────────────────────────────────────────────
+
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
 
-            let fullContent = '';
-            let reasoningContent = '';
             let isThinkingBlock = false;
             let jsonBuffer = '';
             let isJsonBlock = false;
@@ -223,10 +420,14 @@ export function ChatProvider({ children }) {
                 setConversations(prev => prev.map(conv => {
                     if (conv.id === conversationId) {
                         const msgs = [...(conv.messages || [])];
-                        // If we have a target message ID, use that. Otherwise fallback to last message.
-                        const targetIndex = targetMsgId
-                            ? msgs.findIndex(m => m.id === targetMsgId)
-                            : msgs.length - 1;
+                        // Try to find the message by its real DB ID first, then fallback to the original temp UI ID
+                        // This handles the async gap where `realAiMsgId` is set but `setConversations` hasn't fully applied the ID swap yet.
+                        let targetIndex = msgs.findIndex(m => (realAiMsgId && m.id === realAiMsgId) || (targetMsgId && m.id === targetMsgId));
+
+                        // Ultimate fallback: update the very last assistant message
+                        if (targetIndex === -1) {
+                            targetIndex = msgs.findLastIndex(m => m.role === 'assistant');
+                        }
 
                         if (targetIndex !== -1) {
                             const lastMsg = msgs[targetIndex];
@@ -248,6 +449,8 @@ export function ChatProvider({ children }) {
 
                                 return { ...conv, messages: msgs, allMessages: allMsgs };
                             }
+                        } else {
+                            console.log(`[STREAM TRACE] Message NOT FOUND in msgs!`);
                         }
                     }
                     return conv;
@@ -256,11 +459,14 @@ export function ChatProvider({ children }) {
 
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) break;
+                if (done) {
+                    console.log(`[STREAM TRACE] done = true`);
+                    break;
+                }
                 const chunk = decoder.decode(value, { stream: true });
+                console.log(`[STREAM TRACE] Chunk received:`, chunk.substring(0, 50));
 
                 // Stream Parsing Logic
-                // ... (Same chunk parsing logic as before) ...
                 if (chunk.includes('__JSON_START__')) {
                     const parts = chunk.split('__JSON_START__');
                     if (parts[0]) fullContent += parts[0];
@@ -316,85 +522,105 @@ export function ChatProvider({ children }) {
                 updateAssistantMessage(fullContent, reasoningContent);
             }
 
-            // Save to DB (only creating a new one if not exists? No, we need to UPDATE the placeholder msg or CREATE new one)
-            // Ideally we created a placeholder in DB via POST /messages before calling this.
-            // But we didn't. We only created one in UI state.
-            // So we must CREATE it now.
+            // Stream finished successfully — update DB with final content and clear streaming flag
+            if (realAiMsgId) {
+                await persistToDb(false);
+                // Force UI to clear isThinking in case the chunk stream missed it
+                setConversations(prev => prev.map(conv => {
+                    if (conv.id === conversationId) {
+                        const msgs = conv.messages.map(m => m.id === realAiMsgId ? { ...m, isThinking: false } : m);
+                        const allMsgs = conv.allMessages.map(m => m.id === realAiMsgId ? { ...m, isThinking: false } : m);
+                        return { ...conv, messages: msgs, allMessages: allMsgs };
+                    }
+                    return conv;
+                }));
+            } else {
+                // Fallback: if pre-create failed, create the message now as before
+                fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({
+                        conversationId,
+                        role: 'assistant',
+                        content: fullContent,
+                        reasoning: reasoningContent,
+                        modelName: modelName,
+                        parentId: lastMsg.id
+                    })
+                }).then(res => res.json()).then(data => {
+                    if (data.success && data.data.id) {
+                        const realId = data.data.id;
+                        const tempIdToReplace = targetMsgId;
+                        setConversations(prev => prev.map(conv => {
+                            if (conv.id === conversationId) {
+                                const msgs = conv.messages;
+                                const msgToReplace = tempIdToReplace
+                                    ? msgs.find(m => m.id === tempIdToReplace)
+                                    : msgs[msgs.length - 1];
+                                if (msgToReplace && msgToReplace.role === 'assistant') {
+                                    const actualTempId = msgToReplace.id;
+                                    const newMsgs = conv.messages.map(m => m.id === actualTempId ? { ...m, id: realId, createdAt: data.data.createdAt } : m);
+                                    const newAllMsgs = conv.allMessages.map(m => {
+                                        if (m.id === actualTempId) return { ...m, id: realId, createdAt: data.data.createdAt };
+                                        if (m.siblingIds && (m.siblingIds || []).includes(actualTempId)) {
+                                            return { ...m, siblingIds: m.siblingIds.map(id => id === actualTempId ? realId : id) };
+                                        }
+                                        return m;
+                                    });
+                                    const newActivePath = (conv.activePath || []).map(id => id === actualTempId ? realId : id);
+                                    return { ...conv, messages: newMsgs, allMessages: newAllMsgs, activePath: newActivePath };
+                                }
+                            }
+                            return conv;
+                        }));
+                    }
+                });
+            }
 
-            // Wait, if we are regenerating, we might want to attach it to a parent.
-            // We need the parent ID.
-            // Let's get the conversation state to find the last user message ID.
+        } catch (error) {
+            console.error('Chat stream error:', error);
 
-            // This is async inside streaming, state might be stale in closure but we use setState updater which is fine.
-            // But to save to DB we need the parent ID right now.
-            // Easier way: The caller of fetchOpenAIResponse should ensure the USER message is saved.
-            // And we find the last user message in the current conversation active path to use as parent.
-
-            // Since we can't easily access updated state here without refs or careful logic,
-            // let's assume we save it as a new message at the end of the conversation.
-            // Or better: `addMessage` sends us the history. The last item is the user message (or system).
-            const lastMsg = messages[messages.length - 1]; // This is the user message
-
-            fetch('/api/messages', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({
-                    conversationId,
-                    role: 'assistant',
-                    content: fullContent,
-                    reasoning: reasoningContent,
-                    modelName: modelName,
-                    parentId: lastMsg.id // Link to user message
-                })
-            }).then(res => res.json()).then(data => {
-                if (data.success && data.data.id) {
-                    const realId = data.data.id;
-                    const tempIdToReplace = targetMsgId;
-
-                    // Update the placeholder ID in state with the real DB ID
+            // If the stream was aborted (user clicked Stop), save whatever we have
+            if (error.name === 'AbortError') {
+                if (realAiMsgId && fullContent) {
+                    // Save partial content and clear streaming flag
+                    await persistToDb(false);
+                    // Update the UI message to show it's no longer streaming
                     setConversations(prev => prev.map(conv => {
                         if (conv.id === conversationId) {
-                            // Find the message to replace. Prefer targetMsgId if it was a temp ID.
-                            const msgs = conv.messages;
-                            const msgToReplace = tempIdToReplace
-                                ? msgs.find(m => m.id === tempIdToReplace)
-                                : msgs[msgs.length - 1];
-
-                            if (msgToReplace && msgToReplace.role === 'assistant') {
-                                const actualTempId = msgToReplace.id;
-
-                                const newMsgs = conv.messages.map(m => m.id === actualTempId ? { ...m, id: realId, createdAt: data.data.createdAt } : m);
-                                const newAllMsgs = conv.allMessages.map(m => {
-                                    if (m.id === actualTempId) {
-                                        return { ...m, id: realId, createdAt: data.data.createdAt };
-                                    }
-                                    // Update sibling references to point to the real ID
-                                    if (m.siblingIds && (m.siblingIds || []).includes(actualTempId)) {
-                                        return {
-                                            ...m,
-                                            siblingIds: m.siblingIds.map(id => id === actualTempId ? realId : id)
-                                        };
-                                    }
-                                    return m;
-                                });
-                                const newActivePath = (conv.activePath || []).map(id => id === actualTempId ? realId : id);
-
-                                return { ...conv, messages: newMsgs, allMessages: newAllMsgs, activePath: newActivePath };
-                            }
+                            const effectiveId = realAiMsgId;
+                            const msgs = conv.messages.map(m =>
+                                m.id === effectiveId ? { ...m, isThinking: false, content: fullContent } : m
+                            );
+                            const allMsgs = conv.allMessages.map(m =>
+                                m.id === effectiveId ? { ...m, isThinking: false, content: fullContent } : m
+                            );
+                            return { ...conv, messages: msgs, allMessages: allMsgs };
+                        }
+                        return conv;
+                    }));
+                } else {
+                    // Nothing streamed yet — remove the placeholder
+                    setConversations(prev => prev.map(conv => {
+                        if (conv.id === conversationId) {
+                            const effectiveId = realAiMsgId || targetMsgId;
+                            const msgs = conv.messages.filter(m => m.id !== effectiveId);
+                            const allMsgs = conv.allMessages.filter(m => m.id !== effectiveId);
+                            const activePath = (conv.activePath || []).filter(id => id !== effectiveId);
+                            return { ...conv, messages: msgs, allMessages: allMsgs, activePath };
                         }
                         return conv;
                     }));
                 }
-            });
-
-        } catch (error) {
-            console.error('Chat stream error:', error);
+                return;
+            }
 
             setConversations(prev => prev.map(conv => {
                 if (conv.id === conversationId) {
                     let errorMessage = `**Error:** ${error.message}`;
                     const msgs = conv.messages.map(m => m.isThinking ? { ...m, isThinking: false, content: errorMessage } : m);
-                    return { ...conv, messages: msgs };
+                    const allMsgs = conv.allMessages.map(m => m.isThinking ? { ...m, isThinking: false, content: errorMessage } : m);
+                    return { ...conv, messages: msgs, allMessages: allMsgs };
                 }
                 return conv;
             }));
@@ -404,6 +630,10 @@ export function ChatProvider({ children }) {
         }
     }, [token]);
 
+    // Keep ref updated to avoid TDZ in the conversation load useEffect
+    useEffect(() => {
+        fetchOpenAIResponseRef.current = fetchOpenAIResponse;
+    }, [fetchOpenAIResponse]);
 
     const createConversation = useCallback(async (firstMessage, modelId = 'gpt-4o', modelName = 'GPT-4o', assistantId = null, fileAttachment = null) => {
         let messages = [];
@@ -561,10 +791,12 @@ export function ChatProvider({ children }) {
         if (!content && !fileAttachment) return;
 
         // Capture parent ID BEFORE updating state
+        // Walk backwards through activePath to find the last message with a real DB ID
+        // (skip temp-* and error-token-* IDs that were never persisted to the DB)
         const currentConv = conversations.find(c => c.id === conversationId);
-        const parentId = currentConv?.activePath?.length > 0
-            ? currentConv.activePath[currentConv.activePath.length - 1]
-            : null;
+        const isRealDbId = (id) => id && !id.startsWith('temp-') && !id.startsWith('error-token-');
+        const activePath = currentConv?.activePath || [];
+        const parentId = [...activePath].reverse().find(isRealDbId) || null;
 
         const tempId = Date.now().toString();
         const userMsg = { id: tempId, role, content, timestamp: new Date(), attachment: fileAttachment, parentId };

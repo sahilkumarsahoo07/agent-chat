@@ -721,9 +721,34 @@ export default function Sidebar() {
                                     <span className="text-[11px] font-bold text-[var(--sidebar-foreground)] uppercase tracking-wider">
                                         {user?.plan || 'FREE'} PLAN
                                     </span>
-                                    <span className="text-[10px] font-bold bg-transparent border border-[var(--border)] text-[var(--foreground)] px-2 py-[2px] rounded-full">
-                                        {user?.tokens !== undefined ? user.tokens : '...'} tokens
-                                    </span>
+                                    <div className="relative group/token">
+                                        <span className={`text-[10px] font-bold bg-transparent border px-2 py-[2px] rounded-full cursor-default transition-colors ${user?.tokens === 0 ? 'border-amber-500/50 text-amber-400' : 'border-[var(--border)] text-[var(--foreground)]'}`}>
+                                            {user?.tokens !== undefined ? user.tokens : '...'} tokens
+                                        </span>
+                                        {user?.tokens === 0 && user?.tokenResetDate && (() => {
+                                            const resetAt = new Date(new Date(user.tokenResetDate).getTime() + 4 * 60 * 60 * 1000);
+                                            const diff = resetAt - Date.now();
+                                            if (diff <= 0) return null;
+
+                                            // Make absolute time explicit instead of a freezing countdown
+                                            const resetTimeStr = resetAt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+                                            const resetDateStr = resetAt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                                            return (
+                                                <div className="absolute bottom-full right-0 mb-2 hidden group-hover/token:block z-50 pointer-events-none">
+                                                    <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 shadow-xl whitespace-nowrap flex flex-col items-center">
+                                                        <p className="text-[11px] font-semibold text-[var(--sidebar-foreground)] mb-0.5">⏱ Renews at</p>
+                                                        <p className="text-[13px] font-bold text-[var(--foreground)] tracking-tight">
+                                                            {resetTimeStr}
+                                                        </p>
+                                                        <p className="text-[10px] text-[var(--sidebar-foreground)] opacity-80 mt-0.5">
+                                                            {resetDateStr}
+                                                        </p>
+                                                    </div>
+                                                    <div className="w-2 h-2 bg-[var(--card)] border-r border-b border-[var(--border)] rotate-45 ml-auto mr-2 -mt-1" />
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => window.dispatchEvent(new Event('open-subscription-modal'))}
@@ -859,7 +884,14 @@ export default function Sidebar() {
                         {!isCollapsed && (
                             <div className="flex-1 min-w-0 text-left">
                                 <p className="text-[12px] xl:text-[13px] font-medium truncate">{user?.name || 'User'}</p>
-                                <p className="text-[10px] text-[var(--sidebar-foreground)] leading-tight truncate">{user?.email || 'user@example.com'}</p>
+                                <div className="flex items-center gap-1.5 mt-0.5 mt-mb-0.5">
+                                    <p className="text-[10px] text-[var(--sidebar-foreground)] flex-1 leading-tight truncate">{user?.email || 'user@example.com'}</p>
+                                    {user?.plan && user.plan !== 'FREE' && (
+                                        <span className="shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--foreground)] text-[var(--background)]">
+                                            {user.plan}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         )}
                         {!isCollapsed && <MoreHorizontal size={14} className="text-[var(--sidebar-foreground)]" />}

@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { success, error } from '@/lib/api-helpers';
 
-// PUT /api/messages/[id] - Update message content
+// PUT /api/messages/[id] - Update message content, reasoning, and streaming status
 // DELETE /api/messages/[id] - Delete message
 export async function PUT(request, { params }) {
     try {
@@ -12,7 +12,7 @@ export async function PUT(request, { params }) {
 
         const { id } = await params;
         const body = await request.json();
-        const { content } = body;
+        const { content, reasoning, isStreaming } = body;
 
         // Verify ownership (via conversation)
         const message = await prisma.message.findUnique({
@@ -23,9 +23,14 @@ export async function PUT(request, { params }) {
         if (!message) return error('Message not found', 404);
         if (message.conversation.userId !== auth.userId) return error('Unauthorized', 403);
 
+        const updateData = {};
+        if (content !== undefined) updateData.content = content;
+        if (reasoning !== undefined) updateData.reasoning = reasoning;
+        if (isStreaming !== undefined) updateData.isStreaming = isStreaming;
+
         const updated = await prisma.message.update({
             where: { id },
-            data: { content },
+            data: updateData,
         });
 
         return success(updated);
