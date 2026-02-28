@@ -3,6 +3,9 @@
 import { useRouter } from 'next/navigation';
 import EditAssistantView from '@/components/edit-assistant-view';
 
+export const dynamic = 'force-dynamic';
+
+
 export default function CreateAssistantPage() {
     const router = useRouter();
 

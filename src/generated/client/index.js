@@ -208,7 +208,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\ssahoo\\source\\Agent\\agent-ai\\src\\generated\\client",
+      "value": "D:\\agent-chat\\src\\generated\\client",
       "fromEnvVar": null
     },
     "config": {
@@ -222,12 +222,11 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\ssahoo\\source\\Agent\\agent-ai\\prisma\\schema.prisma",
+    "sourceFilePath": "D:\\agent-chat\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": null,
-    "schemaEnvPath": "../../../.env"
+    "rootEnvPath": null
   },
   "relativePath": "../../../prisma",
   "clientVersion": "6.19.2",
@@ -236,6 +235,7 @@ const config = {
     "db"
   ],
   "activeProvider": "mongodb",
+  "postinstall": false,
   "inlineDatasources": {
     "db": {
       "url": {

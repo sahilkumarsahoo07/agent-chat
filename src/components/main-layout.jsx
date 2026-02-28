@@ -3,22 +3,14 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import Sidebar from './sidebar';
 import SubscriptionModal from './subscription-modal';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, X } from 'lucide-react';
 
-export default function MainLayout({ children }) {
-    const pathname = usePathname();
-    const router = useRouter();
+function StripeSessionHandler({ setPaymentModal }) {
     const searchParams = useSearchParams();
-    const { user, loading, fetchUser, token } = useAuth();
+    const { fetchUser, token } = useAuth();
 
-    // Manage Payment Result Modal State
-    const [paymentModal, setPaymentModal] = useState({ isOpen: false, status: null });
-
-    const isAuthPage = pathname === '/login' || pathname === '/signup';
-
-    // Check for Stripe Checkout return URLs
     useEffect(() => {
         const success = searchParams.get('upgrade_success');
         const session_id = searchParams.get('session_id');
@@ -41,10 +33,9 @@ export default function MainLayout({ children }) {
                     }
                 }
 
-                if (token) await fetchUser(token); // Force fresh fetch of tokens/plan
+                if (token) await fetchUser(token);
                 setPaymentModal({ isOpen: true, status: 'success' });
 
-                // Clean up the URL strictly replacing the state without the stripe params
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, document.title, newUrl);
             };
@@ -56,7 +47,20 @@ export default function MainLayout({ children }) {
             const newUrl = window.location.pathname;
             window.history.replaceState({}, document.title, newUrl);
         }
-    }, [searchParams, fetchUser, token]);
+    }, [searchParams, fetchUser, token, setPaymentModal]);
+
+    return null;
+}
+
+export default function MainLayout({ children }) {
+    const pathname = usePathname();
+    const router = useRouter();
+    const { user, loading } = useAuth();
+
+    // Manage Payment Result Modal State
+    const [paymentModal, setPaymentModal] = useState({ isOpen: false, status: null });
+
+    const isAuthPage = pathname === '/login' || pathname === '/signup';
 
     useEffect(() => {
         if (loading) return;
@@ -87,6 +91,9 @@ export default function MainLayout({ children }) {
 
     return (
         <div className="flex h-screen w-full bg-[var(--background)] overflow-hidden">
+            <Suspense fallback={null}>
+                <StripeSessionHandler setPaymentModal={setPaymentModal} />
+            </Suspense>
             {!isAuthPage && <Sidebar />}
             <main className="flex-1 flex flex-col min-w-0 min-h-0 relative">
                 {children}

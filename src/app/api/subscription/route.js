@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { success, error } from '@/lib/api-helpers';
 import { PLAN_LIMITS } from '@/lib/token-utils';
+import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 

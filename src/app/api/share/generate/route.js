@@ -1,5 +1,8 @@
 import { getAuthUser } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+
+export const dynamic = 'force-dynamic';
+
 import { success, error } from '@/lib/api-helpers';
 import { randomUUID } from 'crypto';
 

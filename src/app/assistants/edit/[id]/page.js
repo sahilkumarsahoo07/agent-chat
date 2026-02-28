@@ -6,6 +6,8 @@ import { useChat } from '@/context/chat-context';
 
 import { STATIC_ASSISTANTS } from '@/lib/assistants-config';
 
+export const dynamic = 'force-dynamic';
+
 export default function EditAssistantPage() {
     const router = useRouter();
     const params = useParams();
