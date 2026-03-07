@@ -1,5 +1,5 @@
 'use client';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import Sidebar from './sidebar';
 import SubscriptionModal from './subscription-modal';
