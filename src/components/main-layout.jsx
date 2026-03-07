@@ -3,54 +3,11 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import Sidebar from './sidebar';
 import SubscriptionModal from './subscription-modal';
+import StripeSessionHandler from './stripe-handler';
 import { Suspense, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, X } from 'lucide-react';
 
-function StripeSessionHandler({ setPaymentModal }) {
-    const searchParams = useSearchParams();
-    const { fetchUser, token } = useAuth();
-
-    useEffect(() => {
-        const success = searchParams.get('upgrade_success');
-        const session_id = searchParams.get('session_id');
-        const cancelled = searchParams.get('upgrade_cancelled');
-
-        if (success === 'true') {
-            const verifyAndFetch = async () => {
-                if (session_id && token) {
-                    try {
-                        await fetch('/api/stripe/verify-session', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                Authorization: `Bearer ${token}`
-                            },
-                            body: JSON.stringify({ sessionId: session_id })
-                        });
-                    } catch (err) {
-                        console.error('Session verify failed:', err);
-                    }
-                }
-
-                if (token) await fetchUser(token);
-                setPaymentModal({ isOpen: true, status: 'success' });
-
-                const newUrl = window.location.pathname;
-                window.history.replaceState({}, document.title, newUrl);
-            };
-
-            verifyAndFetch();
-        } else if (cancelled === 'true') {
-            setPaymentModal({ isOpen: true, status: 'cancelled' });
-
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
-        }
-    }, [searchParams, fetchUser, token, setPaymentModal]);
-
-    return null;
-}
 
 export default function MainLayout({ children }) {
     const pathname = usePathname();
@@ -61,9 +18,10 @@ export default function MainLayout({ children }) {
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, status: null });
 
     const isAuthPage = pathname === '/login' || pathname === '/signup';
+    const isSSR = typeof window === 'undefined';
 
     useEffect(() => {
-        if (loading) return;
+        if (loading || isSSR) return;
 
         if (!user && !isAuthPage) {
             // Not logged in and not on auth page -> redirect to login with callback
@@ -72,12 +30,12 @@ export default function MainLayout({ children }) {
         } else if (user && isAuthPage) {
             // Logged in but still on auth page -> only redirect to / if NO callback is present.
             // If a callback is present, we assume the login page is handling the specific redirect.
-            const hasCallback = typeof window !== 'undefined' && window.location.search.includes('callbackUrl');
+            const hasCallback = window.location.search.includes('callbackUrl');
             if (!hasCallback) {
                 router.push('/');
             }
         }
-    }, [user, loading, isAuthPage, router, pathname]);
+    }, [user, loading, isAuthPage, router, pathname, isSSR]);
 
     if (loading) {
         // During SSR or initial load, we don't know the auth state yet.
