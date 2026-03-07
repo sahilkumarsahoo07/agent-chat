@@ -80,6 +80,19 @@ export default function MainLayout({ children }) {
     }, [user, loading, isAuthPage, router, pathname]);
 
     if (loading) {
+        // During SSR or initial load, we don't know the auth state yet.
+        // But we MUST allow children to render during build (prerendering).
+        const isSSR = typeof window === 'undefined';
+        if (isSSR) {
+            return (
+                <div className="flex h-screen w-full bg-[var(--background)] overflow-hidden">
+                    <main className="flex-1 flex flex-col min-w-0 min-h-0 relative">
+                        {children}
+                    </main>
+                </div>
+            );
+        }
+
         return (
             <div className="flex h-screen w-full items-center justify-center bg-[var(--background)] text-white">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
@@ -87,7 +100,8 @@ export default function MainLayout({ children }) {
         );
     }
 
-    if (!user && !isAuthPage) return null; // Prevent flash of content
+    // On client, if not logged in and not an auth page, we return null while redirecting
+    if (typeof window !== 'undefined' && !user && !isAuthPage) return null;
 
     return (
         <div className="flex h-screen w-full bg-[var(--background)] overflow-hidden">
