@@ -1,6 +1,20 @@
 import { OpenAI } from 'openai';
+import prisma from '@/lib/prisma';
 import { getAuthUser } from '@/lib/auth';
 import { checkAndDeductTokens } from '@/lib/token-utils';
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+
+const openrouter = new OpenAI({
+    apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY,
+    baseURL: 'https://openrouter.ai/api/v1',
+    defaultHeaders: {
+        'HTTP-Referer': 'https://agent-chat.app', // Optional, for OpenRouter rankings
+        'X-Title': 'Agent Chat', // Optional, for OpenRouter rankings
+    },
+});
 
 export const runtime = 'nodejs';
 
