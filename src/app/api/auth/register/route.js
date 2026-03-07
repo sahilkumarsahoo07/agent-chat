@@ -51,6 +51,11 @@ export async function POST(request) {
         return success({ user, token }, 201);
     } catch (err) {
         console.error('Register error:', err);
+
+        if (err.code?.startsWith('P20')) {
+            return error('Database connection error. Please check your Atlas IP whitelist and DATABASE_URL.', 500);
+        }
+
         return error('Internal server error', 500);
     }
 }

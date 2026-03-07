@@ -47,6 +47,12 @@ export async function POST(request) {
         });
     } catch (err) {
         console.error('Login error:', err);
+
+        // More descriptive error for connection issues (P2010, P2024, etc.)
+        if (err.code?.startsWith('P20')) {
+            return error('Database connection error. Please check your Atlas IP whitelist and DATABASE_URL.', 500);
+        }
+
         return error('Internal server error', 500);
     }
 }

@@ -216,8 +216,12 @@ export async function POST(req) {
             name: error.name,
             model: modelId
         });
+        const isDbError = error.code?.startsWith('P20') || error.message?.includes('Server selection timeout');
+
         return new Response(JSON.stringify({
-            error: error.message,
+            error: isDbError
+                ? 'Database connection error. Please check your Atlas IP whitelist and DATABASE_URL.'
+                : error.message,
             status: error.status
         }), {
             status: error.status || 500,
