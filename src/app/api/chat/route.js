@@ -31,37 +31,54 @@ export async function POST(req) {
             });
         }
 
-        const tokenCheck = await checkAndDeductTokens(auth.userId);
-        if (!tokenCheck.allowed) {
-            return new Response(JSON.stringify({ error: tokenCheck.error }), {
-                status: 402, // 402 Payment Required
+        // Validate API keys exist
+        if (!process.env.OPENAI_API_KEY && !process.env.OPENROUTER_API_KEY) {
+            console.error('Missing API Keys: Neither OPENAI_API_KEY nor OPENROUTER_API_KEY is set.');
+            return new Response(JSON.stringify({
+                error: 'AI service configuration is missing. Please check your environment variables.'
+            }), {
+                status: 500,
                 headers: { 'Content-Type': 'application/json' },
             });
         }
 
-        const { messages, model, assistantId, projectInstructions } = await req.json();
+        const tokenCheck = await checkAndDeductTokens(auth.userId);
+        if (!tokenCheck.allowed) {
+            return new Response(JSON.stringify({
+                error: tokenCheck.error,
+                resetTime: tokenCheck.resetTime
+            }), {
+                status: 402,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+        const body = await req.json();
+        const { messages, model, assistantId, projectInstructions } = body;
+
+        if (!messages || !Array.isArray(messages)) {
+            return new Response(JSON.stringify({ error: 'Messages must be an array' }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
         modelId = model;
 
         // Determine which client to use and refine the model ID
         let finalModel = model || 'arcee-ai/trinity-large-preview:free';
-
-        // Detect if the providing key is an OpenRouter key
         const isOpenRouterKey = process.env.OPENAI_API_KEY?.startsWith('sk-or-');
         let client = openrouter;
 
         if (finalModel === 'gpt-5-nano') {
-            // If it's the custom nano model, use openrouter if the key is OR, 
-            // otherwise use openai if it's a real openai key
             client = isOpenRouterKey ? openrouter : openai;
         } else if (finalModel.startsWith('openai/')) {
-            // For OpenAI models, decide based on which key is available/provided
             if (!isOpenRouterKey && (process.env.OPENROUTER_API_KEY || !process.env.OPENAI_API_KEY)) {
                 client = openrouter;
             } else if (!isOpenRouterKey) {
                 client = openai;
                 finalModel = finalModel.replace('openai/', '');
             } else {
-                // It's an OpenRouter key, so use openrouter client
                 client = openrouter;
             }
         }
@@ -69,41 +86,26 @@ export async function POST(req) {
         const isReasoningModel = finalModel.startsWith('o');
         const isVisionModel = (model) => {
             const m = model.toLowerCase();
-            return m.includes('gpt-4') ||
-                m.includes('claude-3') ||
-                m.includes('gemini-1.5') ||
-                m.includes('pixtral') ||
-                m.includes('vision') ||
-                m.includes('llama-3.2-90b-vision') ||
-                m.includes('llama-3.2-11b-vision');
+            return m.includes('gpt-4') || m.includes('claude-3') || m.includes('gemini-1.5') || m.includes('pixtral') || m.includes('vision');
         };
 
         let searchContext = '';
         let sources = [];
 
-        // Search Logic
         if (assistantId === 'search') {
             const query = messages[messages.length - 1].content;
-            console.log('Searching for:', query);
-
             try {
                 const searchResponse = await fetch('https://api.tavily.com/search', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         api_key: process.env.TAVILY_API_KEY,
                         query: query,
-                        search_depth: "basic",
-                        include_answer: true,
                         max_results: 5
                     })
                 });
-
                 const searchData = await searchResponse.json();
                 sources = searchData.results || [];
-
                 if (sources.length > 0) {
                     searchContext = `\n\nSearch Results:\n${sources.map((s, i) => `[${i + 1}] ${s.title}: ${s.content}`).join('\n')}\n\nUser Question: ${query}`;
                 }
@@ -117,47 +119,12 @@ export async function POST(req) {
             messages: [
                 {
                     role: isReasoningModel ? 'developer' : 'system',
-                    content: `You are a helpful AI assistant. Always format code using markdown code blocks. Specify the programming language after the first set of backticks for proper syntax highlighting.${projectInstructions ? `\n\nProject Context:\n${projectInstructions}` : ''}${searchContext ? `\n\nYou have access to the following real-time search results to answer the user's question.Base your answer primarily on these results and cite them using [1], [2] etc. \n${searchContext}` : ''}`
+                    content: `You are a helpful AI assistant. Always provide comprehensive, detailed answers. If you are writing code, explain the logic. ${projectInstructions ? `\n\nProject Context:\n${projectInstructions}` : ''}${searchContext ? `\n\nSearch Results:\n${searchContext}` : ''}`
                 },
-                ...messages.map(m => {
-                    if (m.attachment) {
-                        if (m.attachment.type.startsWith('image/')) {
-                            if (isVisionModel(finalModel)) {
-                                return {
-                                    role: m.role,
-                                    content: [
-                                        { type: "text", text: m.content || "Image description request" },
-                                        {
-                                            type: "image_url",
-                                            image_url: {
-                                                "url": m.attachment.content,
-                                            },
-                                        },
-                                    ],
-                                };
-                            } else {
-                                return {
-                                    role: m.role,
-                                    content: `[Attached Image: ${m.attachment.name}]\n(Note: The selected model "${finalModel}" might not support direct image analysis. Here is the image metadata.)\n\nUser Message: ${m.content || 'Please analyze the attached image.'}`,
-                                };
-                            }
-                        } else if (m.attachment.type === 'application/pdf') {
-                            return {
-                                role: m.role,
-                                content: `[Attached PDF: ${m.attachment.name}]\n(Binary Content provided in Data URL format: ${m.attachment.content.substring(0, 100)}...)\n\nUser Message: ${m.content || 'Please analyze the attached PDF.'}`,
-                            };
-                        } else {
-                            return {
-                                role: m.role,
-                                content: `[Attached File: ${m.attachment.name}]\n\nContent:\n${m.attachment.content}\n\nUser Message: ${m.content || 'Please analyze the attached file.'}`,
-                            };
-                        }
-                    }
-                    return {
-                        role: m.role,
-                        content: m.content,
-                    };
-                })
+                ...messages.map(m => ({
+                    role: m.role,
+                    content: m.content || (m.attachment ? `[Attached File: ${m.attachment.name}]` : '')
+                }))
             ],
             stream: true,
             max_tokens: 8192,
@@ -173,15 +140,13 @@ export async function POST(req) {
                     try {
                         controller.enqueue(encoder.encode(text));
                     } catch (e) {
-                        isStreamClosed = true; // Client disconnected
+                        isStreamClosed = true;
                     }
                 };
 
                 try {
-                    // Send sources first if available
                     if (sources.length > 0) {
-                        const sourceData = JSON.stringify({ sources });
-                        safeEnqueue(`__JSON_START__${sourceData}__JSON_END__`);
+                        safeEnqueue(`__JSON_START__${JSON.stringify({ sources })}__JSON_END__`);
                     }
 
                     let isThinking = false;
@@ -197,7 +162,8 @@ export async function POST(req) {
                                 isThinking = true;
                             }
                             safeEnqueue(reasoning);
-                        } else if (isThinking) {
+                        } else if (isThinking && content) {
+                            // Only end thinking if content actually starts
                             safeEnqueue('__THINKING_END__');
                             isThinking = false;
                         }
@@ -210,33 +176,34 @@ export async function POST(req) {
                         safeEnqueue('__THINKING_END__');
                     }
                 } catch (err) {
-                    if (!isStreamClosed && err.code !== 'ERR_INVALID_STATE') {
-                        console.error('Streaming error details:', err);
-                        try { controller.error(err); } catch (_) { }
-                    }
+                    console.error('Stream processing error:', err);
+                    if (!isStreamClosed) try { controller.error(err); } catch (_) { }
                 } finally {
-                    if (!isStreamClosed) {
-                        try { controller.close(); } catch (_) { }
-                    }
+                    if (!isStreamClosed) try { controller.close(); } catch (_) { }
                 }
             },
         });
 
-        return new Response(stream);
-    } catch (error) {
-        console.error('Detailed API Error:', {
-            message: error.message,
-            status: error.status,
-            name: error.name,
-            model: modelId
+        return new Response(stream, {
+            headers: {
+                'Content-Type': 'text/plain; charset=utf-8',
+                'Cache-Control': 'no-cache, no-transform',
+                'Connection': 'keep-alive',
+                'X-Content-Type-Options': 'nosniff',
+            },
         });
+    } catch (error) {
+        console.error('API Error:', error);
         const isDbError = error.code?.startsWith('P20') || error.message?.includes('Server selection timeout');
+        const isAuthError = error.message?.includes('API key');
 
         return new Response(JSON.stringify({
             error: isDbError
-                ? 'Database connection error. Please check your Atlas IP whitelist and DATABASE_URL.'
-                : error.message,
-            status: error.status
+                ? 'Database connection error. Please check your Atlas IP whitelist.'
+                : isAuthError
+                    ? 'AI Service Authentication error. Please check your API keys.'
+                    : error.message,
+            status: error.status || 500
         }), {
             status: error.status || 500,
             headers: { 'Content-Type': 'application/json' },
