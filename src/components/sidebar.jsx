@@ -92,19 +92,20 @@ const ProjectItem = ({
                 <Link
                     href={`/project/${project.id}`}
                     onClick={() => {
-                        if (isCollapsed) setIsCollapsed(false);
+                        if (isMobileDrawerOpen) setIsMobileDrawerOpen(false);
+                        if (effectiveIsCollapsed) setIsCollapsed(false);
                     }}
                     className={cn(
                         "w-full flex items-center gap-2.5 p-1.5 rounded-lg transition-colors group relative",
                         (pathname?.includes(`/project/${project.id}`)) ? "bg-[var(--border)] shadow-sm text-[var(--foreground)]" : "hover:bg-[var(--border)] text-[var(--sidebar-foreground)]",
-                        isCollapsed ? "justify-center" : "px-2.5"
+                        effectiveIsCollapsed ? "justify-center" : "px-2.5"
                     )}
                 >
                     <Folder size={16} className={cn((pathname?.includes(`/project/${project.id}`)) ? "text-[var(--foreground)]" : "text-[var(--sidebar-foreground)]")} />
-                    {!isCollapsed && <span className="text-[12px] xl:text-[13px] font-medium truncate flex-1 text-left">{project.name}</span>}
+                    {!effectiveIsCollapsed && <span className="text-[12px] xl:text-[13px] font-medium truncate flex-1 text-left">{project.name}</span>}
                 </Link>
 
-                {!isCollapsed && (
+                {!effectiveIsCollapsed && (
                     <div className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                             onClick={(e) => {
@@ -212,6 +213,8 @@ export default function Sidebar() {
     const menuRef = useRef(null);
     const profileMenuRef = useRef(null);
 
+    const effectiveIsCollapsed = isCollapsed && !isMobileDrawerOpen;
+
     // Close menu on click outside
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -318,25 +321,26 @@ export default function Sidebar() {
             </AnimatePresence>
 
             <div
-                onClick={() => isCollapsed && setIsCollapsed(false)}
+                onClick={() => effectiveIsCollapsed && setIsCollapsed(false)}
                 className={cn(
                     "h-screen transition-all duration-300 ease-in-out flex flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)]",
                     // Desktop styles
                     "hidden md:flex relative z-10",
                     // Mobile styles
                     isMobileDrawerOpen ? "!flex fixed inset-y-0 left-0 z-50 shadow-2xl" : "",
-                    isCollapsed && !isMobileDrawerOpen ? "w-16 cursor-pointer hover:bg-[var(--border)]/30" : "w-64"
+                    effectiveIsCollapsed && !isMobileDrawerOpen ? "w-16 cursor-pointer hover:bg-[var(--border)]/30" : "w-64"
                 )}
             >
                 {/* Header */}
                 <div className={cn(
                     "p-4 flex items-center",
-                    isCollapsed ? "justify-center" : "justify-between"
+                    effectiveIsCollapsed ? "justify-center" : "justify-between"
                 )}>
-                    {!isCollapsed && (
+                    {!effectiveIsCollapsed && (
                         <Link
                             href="/"
                             onClick={() => {
+                                if (isMobileDrawerOpen) setIsMobileDrawerOpen(false);
                                 setActiveProjectId(null);
                                 setSelectedAssistantId(null);
                             }}
@@ -348,18 +352,25 @@ export default function Sidebar() {
                         </Link>
                     )}
                     <button
-                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (isMobileDrawerOpen) {
+                                setIsMobileDrawerOpen(false);
+                            } else {
+                                setIsCollapsed(!isCollapsed);
+                            }
+                        }}
                         className={cn(
                             "p-1 hover:bg-[var(--border)] rounded-md transition-colors",
-                            isCollapsed && "flex items-center justify-center h-8 w-8"
+                            effectiveIsCollapsed && "flex items-center justify-center h-8 w-8"
                         )}
-                        aria-label={isCollapsed ? "Open sidebar" : "Close sidebar"}
+                        aria-label={isMobileDrawerOpen ? "Close sidebar" : (effectiveIsCollapsed ? "Open sidebar" : "Collapse sidebar")}
                     >
                         <ChevronLeft
                             size={18}
                             className={cn(
                                 "text-[var(--sidebar-foreground)] transition-transform duration-300",
-                                isCollapsed && "rotate-180"
+                                effectiveIsCollapsed && "rotate-180"
                             )}
                         />
                     </button>
@@ -370,22 +381,23 @@ export default function Sidebar() {
                     <Link
                         href="/chat/new-chat"
                         onClick={() => {
+                            if (isMobileDrawerOpen) setIsMobileDrawerOpen(false);
                             setActiveProjectId(null);
                             setSelectedAssistantId(null);
                         }}
                         className={cn(
                             "w-full flex items-center gap-2.5 p-1.5 border border-[var(--border)] rounded-lg hover:bg-[var(--background)] transition-all group",
-                            isCollapsed ? "justify-center px-0" : "px-2.5"
+                            effectiveIsCollapsed ? "justify-center px-0" : "px-2.5"
                         )}
                     >
                         <Plus size={15} className="text-[var(--sidebar-foreground)] group-hover:text-[var(--foreground)]" />
-                        {!isCollapsed && <span className="text-[12px] xl:text-[13px] font-medium">New Chat</span>}
+                        {!effectiveIsCollapsed && <span className="text-[12px] xl:text-[13px] font-medium">New Chat</span>}
                     </Link>
                 </div>
 
                 {/* Static Assistants List */}
                 <div className="px-2 space-y-1 mb-0 flex-shrink-0">
-                    {!isCollapsed && (
+                    {!effectiveIsCollapsed && (
                         <div className="px-3 py-2 text-[10px] font-bold text-[var(--sidebar-foreground)] uppercase tracking-widest opacity-50 flex items-center justify-between group">
                             Assistants
                         </div>
@@ -394,6 +406,7 @@ export default function Sidebar() {
                         <button
                             key={assistant.id}
                             onClick={async () => {
+                                if (isMobileDrawerOpen) setIsMobileDrawerOpen(false);
                                 setActiveProjectId(null);
                                 const id = await startAssistantChat(assistant);
                                 router.push(`/chat/${id}`);
@@ -401,11 +414,11 @@ export default function Sidebar() {
                             className={cn(
                                 "w-full flex items-center gap-2.5 p-1.5 rounded-lg transition-colors group",
                                 (activeConversation?.assistantId === assistant.id) ? "bg-[var(--background)] shadow-sm" : "hover:bg-[var(--border)]",
-                                isCollapsed ? "justify-center" : "px-2.5"
+                                effectiveIsCollapsed ? "justify-center" : "px-2.5"
                             )}
                         >
                             <AssistantIcon iconId={assistant.iconId} className="w-[18px] h-[18px]" />
-                            {!isCollapsed && <span className="text-[12px] xl:text-[13px] text-[var(--sidebar-foreground)] font-medium">{assistant.name}</span>}
+                            {!effectiveIsCollapsed && <span className="text-[12px] xl:text-[13px] text-[var(--sidebar-foreground)] font-medium">{assistant.name}</span>}
                         </button>
                     ))}
                 </div>
@@ -416,7 +429,7 @@ export default function Sidebar() {
                     {/* Active Assistants */}
                     {activeAssistants.length > 0 && (
                         <div className="pt-2 mt-3 border-t border-[var(--border)]/60">
-                            {!isCollapsed && (
+                            {!effectiveIsCollapsed && (
                                 <div className="px-3 py-2 text-[10px] font-bold text-[var(--sidebar-foreground)] uppercase tracking-widest opacity-50">
                                     Active Assistants
                                 </div>
@@ -425,6 +438,7 @@ export default function Sidebar() {
                                 <div key={assistant.id} className="relative group">
                                     <button
                                         onClick={async () => {
+                                            if (isMobileDrawerOpen) setIsMobileDrawerOpen(false);
                                             setActiveProjectId(null);
                                             const id = await startAssistantChat(assistant);
                                             router.push(`/chat/${id}`);
@@ -432,14 +446,14 @@ export default function Sidebar() {
                                         className={cn(
                                             "w-full flex items-center gap-2.5 p-1.5 rounded-lg transition-colors",
                                             activeConversation?.assistantId === assistant.id ? "bg-[var(--background)] shadow-sm" : "hover:bg-[var(--border)]",
-                                            isCollapsed ? "justify-center" : "px-2.5"
+                                            effectiveIsCollapsed ? "justify-center" : "px-2.5"
                                         )}
                                     >
                                         <AssistantIcon iconId={assistant.iconId} className="w-4 h-4 text-[var(--sidebar-foreground)]" />
-                                        {!isCollapsed && <span className="text-[12px] xl:text-[13px] text-[var(--sidebar-foreground)] font-medium flex-1 text-left pr-6">{assistant.name}</span>}
+                                        {!effectiveIsCollapsed && <span className="text-[12px] xl:text-[13px] text-[var(--sidebar-foreground)] font-medium flex-1 text-left pr-6">{assistant.name}</span>}
                                     </button>
 
-                                    {!isCollapsed && (
+                                    {!effectiveIsCollapsed && (
                                         <button
                                             onClick={(e) => {
                                                 e.preventDefault();
@@ -449,7 +463,7 @@ export default function Sidebar() {
                                             title="Unpin Agent"
                                             className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded bg-[var(--background)] hover:bg-[var(--border)] flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
                                         >
-                                            <span className="text-xs text-[var(--sidebar-foreground)]">×</span>
+                                            <span className="text-xs text-[var(--sidebar-foreground)]">├ù</span>
                                         </button>
                                     )}
                                 </div>
@@ -461,20 +475,20 @@ export default function Sidebar() {
                         onClick={() => setIsExploreOpen(true)}
                         className={cn(
                             "w-full flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-[var(--border)] transition-colors group mt-1",
-                            isCollapsed ? "justify-center" : "px-2.5"
+                            effectiveIsCollapsed ? "justify-center" : "px-2.5"
                         )}
                     >
                         <div className="w-4 h-4 rounded border border-[var(--border)] flex items-center justify-center opacity-60">
                             <Plus size={12} />
                         </div>
-                        {!isCollapsed && <span className="text-[12px] xl:text-[13px] text-[var(--sidebar-foreground)]">Explore Assistants</span>}
+                        {!effectiveIsCollapsed && <span className="text-[12px] xl:text-[13px] text-[var(--sidebar-foreground)]">Explore Assistants</span>}
                     </button>
 
 
 
                     {/* Projects Section */}
                     <div className="mb-3 border-t border-[var(--border)]/60 group/projects">
-                        {!isCollapsed && (
+                        {!effectiveIsCollapsed && (
                             <div className="px-3 py-2 text-[10px] font-bold text-[var(--sidebar-foreground)] uppercase tracking-widest opacity-50 flex items-center justify-between group/header">
                                 Projects
                                 <button
@@ -492,11 +506,11 @@ export default function Sidebar() {
                                 onClick={() => setIsCreateProjectOpen(true)}
                                 className={cn(
                                     "w-full flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-[var(--border)] transition-colors group",
-                                    isCollapsed ? "justify-center" : "px-2.5"
+                                    effectiveIsCollapsed ? "justify-center" : "px-2.5"
                                 )}
                             >
                                 <FolderPlus size={18} className="text-[var(--sidebar-foreground)] group-hover:text-[var(--foreground)]" />
-                                {!isCollapsed && <span className="text-[12px] xl:text-[13px] text-[var(--sidebar-foreground)] font-medium">New Project</span>}
+                                {!effectiveIsCollapsed && <span className="text-[12px] xl:text-[13px] text-[var(--sidebar-foreground)] font-medium">New Project</span>}
                             </button>
                         )}
 
@@ -509,7 +523,7 @@ export default function Sidebar() {
                                             <ProjectItem
                                                 project={project}
                                                 pathname={pathname}
-                                                isCollapsed={isCollapsed}
+                                                effectiveIsCollapsed={effectiveIsCollapsed}
                                                 setIsCollapsed={setIsCollapsed}
                                                 editingProjectId={editingProjectId}
                                                 setEditingProjectId={setEditingProjectId}
@@ -523,7 +537,7 @@ export default function Sidebar() {
                                             />
                                         </div>
                                     ))}
-                                    {!isCollapsed && (
+                                    {!effectiveIsCollapsed && (
                                         <button
                                             onClick={() => setSections(prev => ({ ...prev, showAllProjects: true }))}
                                             className="w-full flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-[var(--border)] text-[var(--sidebar-foreground)] hover:text-[var(--foreground)] transition-colors text-[11px] font-bold uppercase tracking-wider pl-12"
@@ -540,7 +554,7 @@ export default function Sidebar() {
                                             <ProjectItem
                                                 project={project}
                                                 pathname={pathname}
-                                                isCollapsed={isCollapsed}
+                                                effectiveIsCollapsed={effectiveIsCollapsed}
                                                 setIsCollapsed={setIsCollapsed}
                                                 editingProjectId={editingProjectId}
                                                 setEditingProjectId={setEditingProjectId}
@@ -554,7 +568,7 @@ export default function Sidebar() {
                                             />
                                         </div>
                                     ))}
-                                    {projects.length > 4 && !isCollapsed && (
+                                    {projects.length > 4 && !effectiveIsCollapsed && (
                                         <button
                                             onClick={() => setSections(prev => ({ ...prev, showAllProjects: false }))}
                                             className="w-full flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-[var(--border)] text-[var(--sidebar-foreground)] hover:text-[var(--foreground)] transition-colors text-[11px] font-bold uppercase tracking-wider pl-12"
@@ -572,7 +586,7 @@ export default function Sidebar() {
                     <div className="pt-3 border-t border-[var(--border)]/60 space-y-4">
                         {/* Today Section */}
                         <div className="space-y-1">
-                            {!isCollapsed && Object.entries(chatGroups).map(([label, chats]) => (
+                            {!effectiveIsCollapsed && Object.entries(chatGroups).map(([label, chats]) => (
                                 chats.length > 0 && (
                                     <div key={label} className="mt-4 first:mt-0">
                                         <button
@@ -594,32 +608,33 @@ export default function Sidebar() {
                                                 <Link
                                                     href={`/chat/${chat.id}`}
                                                     onClick={() => {
+                                                        if (isMobileDrawerOpen) setIsMobileDrawerOpen(false);
                                                         setActiveProjectId(null);
                                                         setSelectedAssistantId(null);
                                                     }}
                                                     className={cn(
                                                         "w-full flex items-center gap-2.5 p-1.5 rounded-lg transition-all relative",
-                                                        isCollapsed ? "justify-center" : "px-2.5",
+                                                        effectiveIsCollapsed ? "justify-center" : "px-2.5",
                                                         activeConversationId === chat.id
                                                             ? "bg-[var(--border)] text-[var(--foreground)]"
                                                             : "hover:bg-[var(--border)]/50 text-[var(--sidebar-foreground)] hover:text-[var(--foreground)]"
                                                     )}
                                                 >
-                                                    {!isCollapsed && (
+                                                    {!effectiveIsCollapsed && (
                                                         <div className="flex-1 min-w-0 pr-6">
                                                             <span className="text-[12px] xl:text-[13px] truncate text-left w-full font-medium block">
                                                                 {chat.title}
                                                             </span>
                                                         </div>
                                                     )}
-                                                    {chat.isPinned && !isCollapsed && (
+                                                    {chat.isPinned && !effectiveIsCollapsed && (
                                                         <Pin size={12} className="text-[var(--sidebar-foreground)] absolute right-2 top-1/2 -translate-y-1/2 group-hover:opacity-0 transition-opacity" />
                                                     )}
-                                                    {isCollapsed && <History size={16} className={cn(activeConversationId === chat.id ? "text-[var(--foreground)]" : "text-[var(--sidebar-foreground)]")} />}
+                                                    {effectiveIsCollapsed && <History size={16} className={cn(activeConversationId === chat.id ? "text-[var(--foreground)]" : "text-[var(--sidebar-foreground)]")} />}
                                                 </Link>
 
                                                 {/* Hover Menu Trigger */}
-                                                {!isCollapsed && (
+                                                {!effectiveIsCollapsed && (
                                                     <button
                                                         onClick={(e) => {
                                                             e.preventDefault();
@@ -714,7 +729,7 @@ export default function Sidebar() {
                             ref={profileMenuRef}
                             className={cn(
                                 "absolute bottom-20 left-4 z-50 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl p-2 animate-in fade-in slide-in-from-bottom-2 duration-200",
-                                isCollapsed ? "w-48 left-16" : "w-64"
+                                effectiveIsCollapsed ? "w-48 left-16" : "w-64"
                             )}>
                             <div className="px-2 py-3 border-b border-[var(--border)] mb-1 space-y-3">
                                 <div className="flex items-center justify-between px-1">
@@ -736,7 +751,7 @@ export default function Sidebar() {
                                             return (
                                                 <div className="absolute bottom-full right-0 mb-2 hidden group-hover/token:block z-50 pointer-events-none">
                                                     <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg px-3 py-2 shadow-xl whitespace-nowrap flex flex-col items-center">
-                                                        <p className="text-[11px] font-semibold text-[var(--sidebar-foreground)] mb-0.5">⏱ Renews at</p>
+                                                        <p className="text-[11px] font-semibold text-[var(--sidebar-foreground)] mb-0.5">ΓÅ▒ Renews at</p>
                                                         <p className="text-[13px] font-bold text-[var(--foreground)] tracking-tight">
                                                             {resetTimeStr}
                                                         </p>
@@ -802,7 +817,10 @@ export default function Sidebar() {
                             </div>
 
                             <button
-                                onClick={() => logout()}
+                                onClick={() => {
+                                    if (isMobileDrawerOpen) setIsMobileDrawerOpen(false);
+                                    logout();
+                                }}
                                 className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-red-500/10 transition-colors group text-left text-red-500"
                             >
                                 <LogOut size={16} />
@@ -866,7 +884,7 @@ export default function Sidebar() {
                 </AnimatePresence>
 
                 {/* Footer / User Profile */}
-                <div className={cn("border-t border-[var(--border)]", isCollapsed ? "p-2" : "p-4")}>
+                <div className={cn("border-t border-[var(--border)]", effectiveIsCollapsed ? "p-2" : "p-4")}>
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -875,13 +893,13 @@ export default function Sidebar() {
                         className={cn(
                             "w-full flex items-center gap-3 rounded-xl transition-colors",
                             showProfileMenu ? "bg-[var(--border)]" : "hover:bg-[var(--border)]",
-                            isCollapsed ? "justify-center p-1.5" : "p-2"
+                            effectiveIsCollapsed ? "justify-center p-1.5" : "p-2"
                         )}
                     >
                         <div className="w-8 h-8 rounded-full bg-[var(--accent)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-xs ring-1 ring-[var(--border)]">
                             {user?.name ? user.name.substring(0, 2).toUpperCase() : 'US'}
                         </div>
-                        {!isCollapsed && (
+                        {!effectiveIsCollapsed && (
                             <div className="flex-1 min-w-0 text-left">
                                 <p className="text-[12px] xl:text-[13px] font-medium truncate">{user?.name || 'User'}</p>
                                 <div className="flex items-center gap-1.5 mt-0.5 mt-mb-0.5">
@@ -894,12 +912,12 @@ export default function Sidebar() {
                                 </div>
                             </div>
                         )}
-                        {!isCollapsed && <MoreHorizontal size={14} className="text-[var(--sidebar-foreground)]" />}
+                        {!effectiveIsCollapsed && <MoreHorizontal size={14} className="text-[var(--sidebar-foreground)]" />}
                     </button>
                 </div>
                 {/* Fixed Dropdown Menu */}
                 <AnimatePresence>
-                    {menuOpenId && !isCollapsed && (() => {
+                    {menuOpenId && !effectiveIsCollapsed && (() => {
                         const chat = conversations.find(c => c.id === menuOpenId);
                         if (!chat) return null;
 
@@ -1067,6 +1085,7 @@ export default function Sidebar() {
                                                     if (e.key === 'Enter' && e.target.value.trim()) {
                                                         const id = createProject(e.target.value.trim());
                                                         setIsCreateProjectOpen(false);
+                                                        if (isMobileDrawerOpen) setIsMobileDrawerOpen(false);
                                                         router.push(`/project/${id}`);
                                                     }
                                                 }}
@@ -1088,6 +1107,7 @@ export default function Sidebar() {
                                             if (input.value.trim()) {
                                                 const id = createProject(input.value.trim());
                                                 setIsCreateProjectOpen(false);
+                                                if (isMobileDrawerOpen) setIsMobileDrawerOpen(false);
                                                 router.push(`/project/${id}`);
                                             }
                                         }}
