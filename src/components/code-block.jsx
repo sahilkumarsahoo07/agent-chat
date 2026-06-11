@@ -36,11 +36,11 @@ export default function CodeBlock({ language, value }) {
 
     return (
         <div className={cn(
-            "my-2 rounded-[12px] border group transition-colors duration-200",
+            "relative my-2 rounded-[12px] border group transition-colors duration-200",
             isDark ? "border-[#2f2f2f] bg-[#0d0d0d]" : "border-gray-200 bg-[#f9f9f9]"
         )}>
             <div className={cn(
-                "flex items-center justify-between px-5 py-2.5 sticky top-[0px] z-10 transition-all duration-200 rounded-t-[11px]",
+                "flex items-center justify-between px-5 py-2.5 sticky top-0 z-10 transition-all duration-200 rounded-t-[11px]",
                 isDark ? "bg-[#0d0d0d]/95 backdrop-blur-sm" : "bg-[#f9f9f9]/95 backdrop-blur-sm"
             )}>
                 <span className={cn(

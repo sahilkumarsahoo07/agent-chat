@@ -1,10 +1,49 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import CodeBlock from './code-block';
 import { cn } from '@/lib/utils';
+import { Copy, Check } from 'lucide-react';
+
+function NestedMarkdownBlock({ content }) {
+    const [isCopied, setIsCopied] = useState(false);
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(content);
+            setIsCopied(true);
+            setTimeout(() => setIsCopied(false), 2000);
+        } catch (err) {}
+    };
+
+    return (
+        <div className="markdown-nested border border-[var(--border)]/50 rounded-xl my-4 bg-[var(--card)] shadow-sm">
+            <div className="flex items-center justify-between px-4 py-2 bg-[var(--border)]/20 border-b border-[var(--border)]/50 sticky top-0 z-10 rounded-t-xl backdrop-blur-sm">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[var(--sidebar-foreground)]">Markdown (Rendered)</span>
+                <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-1.5 text-[11px] font-medium transition-colors hover:text-[var(--foreground)] text-[var(--sidebar-foreground)]"
+                >
+                    {isCopied ? (
+                        <>
+                            <Check size={13} className="text-green-500" />
+                            <span className="text-green-500 text-[10px]">Copied!</span>
+                        </>
+                    ) : (
+                        <>
+                            <Copy size={13} />
+                            <span>Copy text</span>
+                        </>
+                    )}
+                </button>
+            </div>
+            <div className="p-5">
+                <MarkdownContent content={content} />
+            </div>
+        </div>
+    );
+}
 
 export default function MarkdownContent({ content, className }) {
     return (
@@ -14,9 +53,15 @@ export default function MarkdownContent({ content, className }) {
                 components={{
                     code({ node, inline, className, children, ...props }) {
                         const match = /language-(\w+)/.exec(className || '');
+                        const lang = match ? match[1].toLowerCase() : '';
+                        
+                        if (!inline && (lang === 'markdown' || lang === 'md')) {
+                            return <NestedMarkdownBlock content={String(children).replace(/\n$/, '')} />;
+                        }
+
                         return !inline && match ? (
                             <CodeBlock
-                                language={match[1]}
+                                language={lang}
                                 value={String(children).replace(/\n$/, '')}
                                 {...props}
                             />
@@ -26,6 +71,7 @@ export default function MarkdownContent({ content, className }) {
                             </code>
                         );
                     },
+                    pre: ({ children }) => <>{children}</>,
                     p: ({ children }) => <p className="mb-4 last:mb-0 leading-relaxed text-[15px]">{children}</p>,
                     h1: ({ children }) => <h1 className="text-2xl font-bold mb-4 mt-0">{children}</h1>,
                     h2: ({ children }) => <h2 className="text-xl font-bold mb-3 mt-5 first:mt-0">{children}</h2>,

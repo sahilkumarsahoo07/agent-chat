@@ -796,7 +796,7 @@ export default function ChatInterface() {
                                             key="thread"
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="flex flex-col gap-6 pt-4 max-w-3xl mx-auto w-full"
+                                            className="flex flex-col gap-6 pt-4 max-w-5xl mx-auto w-full"
                                         >
                                             {activeConversation?.messages?.map((msg, idx) => (
                                                 <div
@@ -1296,7 +1296,7 @@ export default function ChatInterface() {
 
                         {/* Input Area */}
                         <div className="shrink-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent pt-4 pb-8 px-4 flex justify-center">
-                            <div className="w-full max-w-3xl">
+                            <div className="w-full max-w-5xl">
                                 <div className="relative bg-[var(--input-bg)] rounded-[24px] shadow-sm transition-all p-2 md:p-2.5 [@media(min-width:1100px)_and_(max-width:1340px)]:p-[8px_0px] xl:p-3.5 border border-[var(--border)]/60 focus-within:border-[var(--sidebar-foreground)]/40">
                                     {uploadedFile && (
                                         <div className="px-2 pt-1 pb-1">
