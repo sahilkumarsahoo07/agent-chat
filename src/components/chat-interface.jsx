@@ -304,6 +304,8 @@ export default function ChatInterface() {
     });
 
     const [isMounted, setIsMounted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [previewImage, setPreviewImage] = useState(null);
 
     const models = useMemo(() => {
         if (activeAssistant?.models && activeAssistant.models.length > 0) {
@@ -498,55 +500,80 @@ export default function ChatInterface() {
 
     const handleSend = async () => {
         if (!message.trim() && !uploadedFile) return;
+        if (isGenerating || isSubmitting) return;
 
-        let fileData = null;
-        if (uploadedFile) {
-            // Check file size (10MB limit)
-            if (uploadedFile.size > 10 * 1024 * 1024) {
-                alert("File is too large. Please upload files smaller than 10MB.");
-                return;
-            }
+        setIsSubmitting(true);
+        try {
+            let fileData = null;
+            if (uploadedFile) {
+                // Check file size (10MB limit)
+                if (uploadedFile.size > 10 * 1024 * 1024) {
+                    alert("File is too large. Please upload files smaller than 10MB.");
+                    setIsSubmitting(false);
+                    return;
+                }
 
-            // Read file content
-            try {
-                fileData = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve({
-                        name: uploadedFile.name,
-                        type: uploadedFile.type,
-                        content: e.target.result
+                // Read file content
+                try {
+                    fileData = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve({
+                            name: uploadedFile.name,
+                            type: uploadedFile.type,
+                            content: e.target.result
+                        });
+                        reader.onerror = (e) => reject(new Error("Failed to read file"));
+
+                        if (uploadedFile.type.startsWith('image/') || uploadedFile.type === 'application/pdf') {
+                            reader.readAsDataURL(uploadedFile);
+                        } else {
+                            reader.readAsText(uploadedFile);
+                        }
                     });
-                    reader.onerror = (e) => reject(new Error("Failed to read file"));
-
-                    if (uploadedFile.type.startsWith('image/') || uploadedFile.type === 'application/pdf') {
-                        reader.readAsDataURL(uploadedFile);
-                    } else {
-                        reader.readAsText(uploadedFile);
-                    }
-                });
-            } catch (err) {
-                console.error("File read error:", err);
-                alert("Error reading file. Please try again.");
-                return;
+                } catch (err) {
+                    console.error("File read error:", err);
+                    alert("Error reading file. Please try again.");
+                    setIsSubmitting(false);
+                    return;
+                }
             }
+
+            const isVirtualId = activeConversationId === 'new-chat' || (activeAssistant && !activeConversation);
+
+            if (!activeConversationId || isVirtualId) {
+                const newId = await createConversation(message, activeModel.model, activeModel.name, activeAssistant?.id, fileData);
+                router.push(`/chat/${newId}`);
+            } else {
+                addMessage(activeConversationId, message, 'user', activeModel.model, activeModel.name, fileData);
+            }
+
+            setMessage('');
+            setUploadedFile(null);
+        } finally {
+            setIsSubmitting(false);
         }
-
-        const isVirtualId = activeConversationId === 'new-chat' || (activeAssistant && !activeConversation);
-
-        if (!activeConversationId || isVirtualId) {
-            const newId = await createConversation(message, activeModel.model, activeModel.name, activeAssistant?.id, fileData);
-            router.push(`/chat/${newId}`);
-        } else {
-            addMessage(activeConversationId, message, 'user', activeModel.model, activeModel.name, fileData);
-        }
-
-        setMessage('');
-        setUploadedFile(null);
     };
 
     const stopGeneration = () => {
         if (activeConversationId) {
             stopResponse(activeConversationId);
+        }
+    };
+
+    const handlePaste = (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const blob = items[i].getAsFile();
+                if (blob) {
+                    const file = new File([blob], `Screenshot_${new Date().toISOString().replace(/[:.]/g, '-')}.png`, { type: blob.type });
+                    setUploadedFile(file);
+                    e.preventDefault();
+                    break;
+                }
+            }
         }
     };
 
@@ -1018,7 +1045,10 @@ export default function ChatInterface() {
                                                                                     {msg.attachment && (
                                                                                         <div className="mb-2">
                                                                                             {msg.attachment.type.startsWith('image/') ? (
-                                                                                                <div className="relative group/img max-w-[240px] rounded-xl overflow-hidden border border-[var(--border)] shadow-sm cursor-zoom-in">
+                                                                                                <div 
+                                                                                                    className="relative group/img max-w-[240px] rounded-xl overflow-hidden border border-[var(--border)] shadow-sm cursor-zoom-in"
+                                                                                                    onClick={() => setPreviewImage(msg.attachment.content)}
+                                                                                                >
                                                                                                     <img
                                                                                                         src={msg.attachment.content}
                                                                                                         className="w-full h-auto object-cover max-h-[300px] hover:scale-[1.02] transition-transform duration-300"
@@ -1295,14 +1325,27 @@ export default function ChatInterface() {
 
 
                         {/* Input Area */}
-                        <div className="shrink-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent pt-4 pb-8 px-4 flex justify-center">
-                            <div className="w-full max-w-5xl">
+                        <div className="shrink-0 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent pt-4 pb-6 md:pb-8 px-6 sm:px-10 md:px-14 lg:px-20 flex justify-center">
+                            <div className="w-full max-w-3xl xl:max-w-4xl">
                                 <div className="relative bg-[var(--input-bg)] rounded-[24px] shadow-sm transition-all p-2 md:p-2.5 [@media(min-width:1100px)_and_(max-width:1340px)]:p-[8px_0px] xl:p-3.5 border border-[var(--border)]/60 focus-within:border-[var(--sidebar-foreground)]/40">
                                     {uploadedFile && (
                                         <div className="px-2 pt-1 pb-1">
                                             <div className="inline-flex items-center gap-2.5 p-2 pr-3 bg-[var(--border)]/10 rounded-xl border border-[var(--border)]/30 group relative max-w-full overflow-hidden">
-                                                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-bold text-xs">
-                                                    <Archive size={16} />
+                                                <div 
+                                                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-bold text-xs overflow-hidden bg-[var(--background)] border border-[var(--border)] cursor-pointer hover:opacity-80 transition-opacity"
+                                                    onClick={() => {
+                                                        if (uploadedFile.type.startsWith('image/')) {
+                                                            setPreviewImage(URL.createObjectURL(uploadedFile));
+                                                        }
+                                                    }}
+                                                >
+                                                    {uploadedFile.type.startsWith('image/') ? (
+                                                        <img src={URL.createObjectURL(uploadedFile)} alt="preview" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-purple-500 flex items-center justify-center">
+                                                            <Archive size={16} />
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <span className="text-[12px] font-medium text-[var(--foreground)] truncate max-w-[150px]">{uploadedFile.name}</span>
                                                 <button onClick={() => setUploadedFile(null)} className="ml-1 opacity-60 hover:opacity-100"><X size={14} /></button>
@@ -1318,6 +1361,7 @@ export default function ChatInterface() {
                                                 handleSend();
                                             }
                                         }}
+                                        onPaste={handlePaste}
                                         placeholder={activeAssistant ? `Ask ${activeAssistant.name}...` : "Ask Anything..."}
                                         rows={1}
                                         className="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none px-4 xl:px-5 py-3 xl:py-4 text-[14px] xl:text-[15px] text-[var(--foreground)] placeholder-[var(--sidebar-foreground)]/60 opacity-90 max-h-[200px]"
@@ -1486,6 +1530,36 @@ export default function ChatInterface() {
                                                 </button>
                                             </div>
                                         </div>
+                                    </motion.div>
+                                </div>
+                            )}
+                        </AnimatePresence>
+
+                        <AnimatePresence>
+                            {previewImage && (
+                                <div 
+                                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8 cursor-zoom-out"
+                                    onClick={() => setPreviewImage(null)}
+                                >
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="relative max-w-full max-h-full flex items-center justify-center"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <img 
+                                            src={previewImage} 
+                                            className="max-w-[100vw] md:max-w-[90vw] max-h-[90vh] object-contain rounded-xl shadow-2xl"
+                                            alt="Preview" 
+                                        />
+                                        <button
+                                            onClick={() => setPreviewImage(null)}
+                                            className="absolute -top-4 -right-4 md:-top-6 md:-right-6 w-8 h-8 md:w-10 md:h-10 bg-[var(--card)] hover:bg-[var(--border)] text-[var(--foreground)] rounded-full flex items-center justify-center transition-colors border border-[var(--border)] shadow-xl z-[201]"
+                                        >
+                                            <X size={20} />
+                                        </button>
                                     </motion.div>
                                 </div>
                             )}

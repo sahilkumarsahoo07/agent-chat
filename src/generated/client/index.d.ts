@@ -3764,6 +3764,7 @@ export namespace Prisma {
     version: number | null
     attachmentName: string | null
     attachmentType: string | null
+    attachmentContent: string | null
     rating: string | null
     isStreaming: boolean | null
     createdAt: Date | null
@@ -3780,6 +3781,7 @@ export namespace Prisma {
     version: number | null
     attachmentName: string | null
     attachmentType: string | null
+    attachmentContent: string | null
     rating: string | null
     isStreaming: boolean | null
     createdAt: Date | null
@@ -3797,6 +3799,7 @@ export namespace Prisma {
     version: number
     attachmentName: number
     attachmentType: number
+    attachmentContent: number
     sources: number
     rating: number
     isStreaming: number
@@ -3824,6 +3827,7 @@ export namespace Prisma {
     version?: true
     attachmentName?: true
     attachmentType?: true
+    attachmentContent?: true
     rating?: true
     isStreaming?: true
     createdAt?: true
@@ -3840,6 +3844,7 @@ export namespace Prisma {
     version?: true
     attachmentName?: true
     attachmentType?: true
+    attachmentContent?: true
     rating?: true
     isStreaming?: true
     createdAt?: true
@@ -3857,6 +3862,7 @@ export namespace Prisma {
     version?: true
     attachmentName?: true
     attachmentType?: true
+    attachmentContent?: true
     sources?: true
     rating?: true
     isStreaming?: true
@@ -3962,6 +3968,7 @@ export namespace Prisma {
     version: number
     attachmentName: string | null
     attachmentType: string | null
+    attachmentContent: string | null
     sources: JsonValue | null
     rating: string | null
     isStreaming: boolean
@@ -3999,6 +4006,7 @@ export namespace Prisma {
     version?: boolean
     attachmentName?: boolean
     attachmentType?: boolean
+    attachmentContent?: boolean
     sources?: boolean
     rating?: boolean
     isStreaming?: boolean
@@ -4020,6 +4028,7 @@ export namespace Prisma {
     version?: boolean
     attachmentName?: boolean
     attachmentType?: boolean
+    attachmentContent?: boolean
     sources?: boolean
     rating?: boolean
     isStreaming?: boolean
@@ -4027,7 +4036,7 @@ export namespace Prisma {
     conversationId?: boolean
   }
 
-  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "role" | "content" | "reasoning" | "modelName" | "parentId" | "siblingIds" | "version" | "attachmentName" | "attachmentType" | "sources" | "rating" | "isStreaming" | "createdAt" | "conversationId", ExtArgs["result"]["message"]>
+  export type MessageOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "role" | "content" | "reasoning" | "modelName" | "parentId" | "siblingIds" | "version" | "attachmentName" | "attachmentType" | "attachmentContent" | "sources" | "rating" | "isStreaming" | "createdAt" | "conversationId", ExtArgs["result"]["message"]>
   export type MessageInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     conversation?: boolean | ConversationDefaultArgs<ExtArgs>
   }
@@ -4048,6 +4057,7 @@ export namespace Prisma {
       version: number
       attachmentName: string | null
       attachmentType: string | null
+      attachmentContent: string | null
       sources: Prisma.JsonValue | null
       rating: string | null
       isStreaming: boolean
@@ -4456,6 +4466,7 @@ export namespace Prisma {
     readonly version: FieldRef<"Message", 'Int'>
     readonly attachmentName: FieldRef<"Message", 'String'>
     readonly attachmentType: FieldRef<"Message", 'String'>
+    readonly attachmentContent: FieldRef<"Message", 'String'>
     readonly sources: FieldRef<"Message", 'Json'>
     readonly rating: FieldRef<"Message", 'String'>
     readonly isStreaming: FieldRef<"Message", 'Boolean'>
@@ -8088,6 +8099,7 @@ export namespace Prisma {
     version: 'version',
     attachmentName: 'attachmentName',
     attachmentType: 'attachmentType',
+    attachmentContent: 'attachmentContent',
     sources: 'sources',
     rating: 'rating',
     isStreaming: 'isStreaming',
@@ -8462,6 +8474,7 @@ export namespace Prisma {
     version?: IntFilter<"Message"> | number
     attachmentName?: StringNullableFilter<"Message"> | string | null
     attachmentType?: StringNullableFilter<"Message"> | string | null
+    attachmentContent?: StringNullableFilter<"Message"> | string | null
     sources?: JsonNullableFilter<"Message">
     rating?: StringNullableFilter<"Message"> | string | null
     isStreaming?: BoolFilter<"Message"> | boolean
@@ -8481,6 +8494,7 @@ export namespace Prisma {
     version?: SortOrder
     attachmentName?: SortOrder
     attachmentType?: SortOrder
+    attachmentContent?: SortOrder
     sources?: SortOrder
     rating?: SortOrder
     isStreaming?: SortOrder
@@ -8503,6 +8517,7 @@ export namespace Prisma {
     version?: IntFilter<"Message"> | number
     attachmentName?: StringNullableFilter<"Message"> | string | null
     attachmentType?: StringNullableFilter<"Message"> | string | null
+    attachmentContent?: StringNullableFilter<"Message"> | string | null
     sources?: JsonNullableFilter<"Message">
     rating?: StringNullableFilter<"Message"> | string | null
     isStreaming?: BoolFilter<"Message"> | boolean
@@ -8522,6 +8537,7 @@ export namespace Prisma {
     version?: SortOrder
     attachmentName?: SortOrder
     attachmentType?: SortOrder
+    attachmentContent?: SortOrder
     sources?: SortOrder
     rating?: SortOrder
     isStreaming?: SortOrder
@@ -8548,6 +8564,7 @@ export namespace Prisma {
     version?: IntWithAggregatesFilter<"Message"> | number
     attachmentName?: StringNullableWithAggregatesFilter<"Message"> | string | null
     attachmentType?: StringNullableWithAggregatesFilter<"Message"> | string | null
+    attachmentContent?: StringNullableWithAggregatesFilter<"Message"> | string | null
     sources?: JsonNullableWithAggregatesFilter<"Message">
     rating?: StringNullableWithAggregatesFilter<"Message"> | string | null
     isStreaming?: BoolWithAggregatesFilter<"Message"> | boolean
@@ -9060,6 +9077,7 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
+    attachmentContent?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
     isStreaming?: boolean
@@ -9078,6 +9096,7 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
+    attachmentContent?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
     isStreaming?: boolean
@@ -9095,6 +9114,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
+    attachmentContent?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     isStreaming?: BoolFieldUpdateOperationsInput | boolean
@@ -9112,6 +9132,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
+    attachmentContent?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     isStreaming?: BoolFieldUpdateOperationsInput | boolean
@@ -9130,6 +9151,7 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
+    attachmentContent?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
     isStreaming?: boolean
@@ -9147,6 +9169,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
+    attachmentContent?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     isStreaming?: BoolFieldUpdateOperationsInput | boolean
@@ -9163,6 +9186,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
+    attachmentContent?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     isStreaming?: BoolFieldUpdateOperationsInput | boolean
@@ -9793,6 +9817,7 @@ export namespace Prisma {
     version?: SortOrder
     attachmentName?: SortOrder
     attachmentType?: SortOrder
+    attachmentContent?: SortOrder
     sources?: SortOrder
     rating?: SortOrder
     isStreaming?: SortOrder
@@ -9814,6 +9839,7 @@ export namespace Prisma {
     version?: SortOrder
     attachmentName?: SortOrder
     attachmentType?: SortOrder
+    attachmentContent?: SortOrder
     rating?: SortOrder
     isStreaming?: SortOrder
     createdAt?: SortOrder
@@ -9830,6 +9856,7 @@ export namespace Prisma {
     version?: SortOrder
     attachmentName?: SortOrder
     attachmentType?: SortOrder
+    attachmentContent?: SortOrder
     rating?: SortOrder
     isStreaming?: SortOrder
     createdAt?: SortOrder
@@ -11070,6 +11097,7 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
+    attachmentContent?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
     isStreaming?: boolean
@@ -11087,6 +11115,7 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
+    attachmentContent?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
     isStreaming?: boolean
@@ -11245,6 +11274,7 @@ export namespace Prisma {
     version?: IntFilter<"Message"> | number
     attachmentName?: StringNullableFilter<"Message"> | string | null
     attachmentType?: StringNullableFilter<"Message"> | string | null
+    attachmentContent?: StringNullableFilter<"Message"> | string | null
     sources?: JsonNullableFilter<"Message">
     rating?: StringNullableFilter<"Message"> | string | null
     isStreaming?: BoolFilter<"Message"> | boolean
@@ -11968,6 +11998,7 @@ export namespace Prisma {
     version?: number
     attachmentName?: string | null
     attachmentType?: string | null
+    attachmentContent?: string | null
     sources?: InputJsonValue | null
     rating?: string | null
     isStreaming?: boolean
@@ -11995,6 +12026,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
+    attachmentContent?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     isStreaming?: BoolFieldUpdateOperationsInput | boolean
@@ -12011,6 +12043,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
+    attachmentContent?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     isStreaming?: BoolFieldUpdateOperationsInput | boolean
@@ -12027,6 +12060,7 @@ export namespace Prisma {
     version?: IntFieldUpdateOperationsInput | number
     attachmentName?: NullableStringFieldUpdateOperationsInput | string | null
     attachmentType?: NullableStringFieldUpdateOperationsInput | string | null
+    attachmentContent?: NullableStringFieldUpdateOperationsInput | string | null
     sources?: InputJsonValue | InputJsonValue | null
     rating?: NullableStringFieldUpdateOperationsInput | string | null
     isStreaming?: BoolFieldUpdateOperationsInput | boolean

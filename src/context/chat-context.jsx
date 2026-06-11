@@ -144,12 +144,22 @@ export function ChatProvider({ children }) {
                 const fullConv = data.data;
 
                 const processConv = (convData) => {
-                    const allMessages = (convData.allMessages || convData.messages || []).map(m => ({
-                        ...m,
-                        timestamp: new Date(m.createdAt || m.timestamp || 0),
-                        isThinking: false,
-                        isStreaming: m.isStreaming || false,
-                    }));
+                    const allMessages = (convData.allMessages || convData.messages || []).map(m => {
+                        const baseMsg = {
+                            ...m,
+                            timestamp: new Date(m.createdAt || m.timestamp || 0),
+                            isThinking: false,
+                            isStreaming: m.isStreaming || false,
+                        };
+                        if (m.attachmentName || m.attachmentContent) {
+                            baseMsg.attachment = {
+                                name: m.attachmentName,
+                                type: m.attachmentType || 'application/octet-stream',
+                                content: m.attachmentContent
+                            };
+                        }
+                        return baseMsg;
+                    });
 
                     const activePathIds = convData.activePath && convData.activePath.length > 0
                         ? convData.activePath
@@ -650,7 +660,13 @@ export function ChatProvider({ children }) {
     const createConversation = useCallback(async (firstMessage, modelId = 'gpt-4o', modelName = 'GPT-4o', assistantId = null, fileAttachment = null) => {
         let messages = [];
         if (firstMessage || fileAttachment) {
-            messages.push({ role: 'user', content: firstMessage || '' });
+            const initialMsg = { role: 'user', content: firstMessage || '' };
+            if (fileAttachment) {
+                initialMsg.attachmentName = fileAttachment.name;
+                initialMsg.attachmentType = fileAttachment.type;
+                initialMsg.attachmentContent = fileAttachment.content;
+            }
+            messages.push(initialMsg);
         }
 
         try {
@@ -673,11 +689,21 @@ export function ChatProvider({ children }) {
                 const newConv = data.data;
 
                 // 1. Prepare base messages from Server
-                let uiMessages = (newConv.messages || []).map(m => ({
-                    ...m,
-                    timestamp: new Date(m.createdAt),
-                    isThinking: false
-                }));
+                let uiMessages = (newConv.messages || []).map(m => {
+                    const baseMsg = {
+                        ...m,
+                        timestamp: new Date(m.createdAt),
+                        isThinking: false
+                    };
+                    if (m.attachmentName || m.attachmentContent) {
+                        baseMsg.attachment = {
+                            name: m.attachmentName,
+                            type: m.attachmentType || 'application/octet-stream',
+                            content: m.attachmentContent
+                        };
+                    }
+                    return baseMsg;
+                });
 
                 let activePath = newConv.activePath && newConv.activePath.length > 0
                     ? newConv.activePath
@@ -831,7 +857,16 @@ export function ChatProvider({ children }) {
             const res = await fetch('/api/messages', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ conversationId, content, role, modelName, parentId })
+                body: JSON.stringify({ 
+                    conversationId, 
+                    content, 
+                    role, 
+                    modelName, 
+                    parentId,
+                    attachmentName: fileAttachment?.name,
+                    attachmentType: fileAttachment?.type,
+                    attachmentContent: fileAttachment?.content
+                })
             });
 
             const data = await res.json();

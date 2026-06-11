@@ -63,9 +63,10 @@ model Message {
   parentId       String?      @map("parent_id") @db.ObjectId
   siblingIds     String[]     @map("sibling_ids") @db.ObjectId
   version        Int          @default(1)
-  attachmentName String?      @map("attachment_name")
-  attachmentType String?      @map("attachment_type")
-  sources        Json?
+  attachmentName    String?      @map("attachment_name")
+  attachmentType    String?      @map("attachment_type")
+  attachmentContent String?      @map("attachment_content")
+  sources           Json?
   rating         String?      @map("rating")
   isStreaming    Boolean      @default(false) @map("is_streaming")
   createdAt      DateTime     @default(now()) @map("created_at")

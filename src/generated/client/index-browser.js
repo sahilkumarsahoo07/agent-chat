@@ -156,6 +156,7 @@ exports.Prisma.MessageScalarFieldEnum = {
   version: 'version',
   attachmentName: 'attachmentName',
   attachmentType: 'attachmentType',
+  attachmentContent: 'attachmentContent',
   sources: 'sources',
   rating: 'rating',
   isStreaming: 'isStreaming',
