@@ -38,6 +38,7 @@ import {
     Mail,
     ArrowDown,
     Menu,
+    Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -305,7 +306,7 @@ export default function ChatInterface() {
 
     const [isMounted, setIsMounted] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [previewImage, setPreviewImage] = useState(null);
+    const [previewFile, setPreviewFile] = useState(null);
 
     const models = useMemo(() => {
         if (activeAssistant?.models && activeAssistant.models.length > 0) {
@@ -565,10 +566,17 @@ export default function ChatInterface() {
         if (!items) return;
 
         for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf('image') !== -1) {
+            if (items[i].kind === 'file') {
                 const blob = items[i].getAsFile();
                 if (blob) {
-                    const file = new File([blob], `Screenshot_${new Date().toISOString().replace(/[:.]/g, '-')}.png`, { type: blob.type });
+                    let filename = blob.name;
+                    if (!filename || filename === 'image.png') {
+                        filename = `Pasted_File_${new Date().toISOString().replace(/[:.]/g, '-')}`;
+                        if (blob.type.startsWith('image/')) filename += '.png';
+                        else if (blob.type === 'application/pdf') filename += '.pdf';
+                        else filename += '.txt';
+                    }
+                    const file = new File([blob], filename, { type: blob.type });
                     setUploadedFile(file);
                     e.preventDefault();
                     break;
@@ -875,7 +883,7 @@ export default function ChatInterface() {
                                                                 return null;
                                                             })()}
 
-                                                            {!msg.isThinking && !msg.content && !msg.reasoning && (
+                                                            {!msg.isThinking && !msg.content && !msg.reasoning && !msg.attachment && (
                                                                 <div className="w-5 h-5 rounded-full border-2 border-t-transparent border-[var(--foreground)] animate-spin my-3 opacity-50" />
                                                             )}
                                                             {(msg.content || (msg.isThinking && msg.reasoning)) && (
@@ -1046,8 +1054,7 @@ export default function ChatInterface() {
                                                                                         <div className="mb-2">
                                                                                             {msg.attachment.type.startsWith('image/') ? (
                                                                                                 <div 
-                                                                                                    className="relative group/img max-w-[240px] rounded-xl overflow-hidden border border-[var(--border)] shadow-sm cursor-zoom-in"
-                                                                                                    onClick={() => setPreviewImage(msg.attachment.content)}
+                                                                                                    onClick={() => setPreviewFile({ url: msg.attachment.content, type: msg.attachment.type, name: msg.attachment.name })}
                                                                                                 >
                                                                                                     <img
                                                                                                         src={msg.attachment.content}
@@ -1056,7 +1063,10 @@ export default function ChatInterface() {
                                                                                                     />
                                                                                                 </div>
                                                                                             ) : (
-                                                                                                <div className="inline-flex items-center gap-3 p-2.5 pr-4 bg-[var(--background)]/40 hover:bg-[var(--background)]/60 rounded-xl border border-[var(--border)] transition-all duration-200 group/file">
+                                                                                                <div 
+                                                                                                    onClick={() => setPreviewFile({ url: msg.attachment.content, type: msg.attachment.type, name: msg.attachment.name })}
+                                                                                                    className="inline-flex items-center gap-3 p-2.5 pr-4 bg-[var(--background)]/40 hover:bg-[var(--background)]/60 rounded-xl border border-[var(--border)] transition-all duration-200 group/file cursor-pointer"
+                                                                                                >
                                                                                                     <div className="w-10 h-10 bg-gradient-to-br from-purple-500/80 to-blue-500/80 rounded-lg flex items-center justify-center flex-shrink-0 text-white shadow-sm group-hover/file:scale-105 transition-transform">
                                                                                                         {msg.attachment.type === 'application/pdf' ? <FileText size={20} /> : <Archive size={20} />}
                                                                                                     </div>
@@ -1334,9 +1344,7 @@ export default function ChatInterface() {
                                                 <div 
                                                     className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-bold text-xs overflow-hidden bg-[var(--background)] border border-[var(--border)] cursor-pointer hover:opacity-80 transition-opacity"
                                                     onClick={() => {
-                                                        if (uploadedFile.type.startsWith('image/')) {
-                                                            setPreviewImage(URL.createObjectURL(uploadedFile));
-                                                        }
+                                                        setPreviewFile({ url: URL.createObjectURL(uploadedFile), type: uploadedFile.type, name: uploadedFile.name });
                                                     }}
                                                 >
                                                     {uploadedFile.type.startsWith('image/') ? (
@@ -1536,30 +1544,72 @@ export default function ChatInterface() {
                         </AnimatePresence>
 
                         <AnimatePresence>
-                            {previewImage && (
+                            {/* File/Image Preview Modal */}
+                            {previewFile && (
                                 <div 
-                                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8 cursor-zoom-out"
-                                    onClick={() => setPreviewImage(null)}
+                                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8"
+                                    onClick={() => setPreviewFile(null)}
                                 >
                                     <motion.div
                                         initial={{ opacity: 0, scale: 0.95 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.95 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="relative max-w-full max-h-full flex items-center justify-center"
-                                        onClick={(e) => e.stopPropagation()}
+                                        className="relative max-w-[90vw] max-h-[90vh] bg-[var(--card)] rounded-2xl overflow-hidden shadow-2xl flex flex-col border border-[var(--border)]"
+                                        onClick={e => e.stopPropagation()}
+                                        style={previewFile.type?.startsWith('image/') ? {} : { width: '800px', height: '80vh' }}
                                     >
-                                        <img 
-                                            src={previewImage} 
-                                            className="max-w-[100vw] md:max-w-[90vw] max-h-[90vh] object-contain rounded-xl shadow-2xl"
-                                            alt="Preview" 
-                                        />
-                                        <button
-                                            onClick={() => setPreviewImage(null)}
-                                            className="absolute -top-4 -right-4 md:-top-6 md:-right-6 w-8 h-8 md:w-10 md:h-10 bg-[var(--card)] hover:bg-[var(--border)] text-[var(--foreground)] rounded-full flex items-center justify-center transition-colors border border-[var(--border)] shadow-xl z-[201]"
-                                        >
-                                            <X size={20} />
-                                        </button>
+                                        <div className="flex items-center justify-between p-3 border-b border-[var(--border)] bg-[var(--background)]">
+                                            <span className="text-sm font-semibold truncate text-[var(--foreground)] pr-4">{previewFile.name || 'Preview'}</span>
+                                            <div className="flex items-center gap-2">
+                                                <a 
+                                                    href={previewFile.url} 
+                                                    download={previewFile.name}
+                                                    className="p-1.5 bg-[var(--border)]/20 hover:bg-[var(--border)]/50 rounded-lg text-[var(--foreground)] transition-colors"
+                                                    title="Download"
+                                                >
+                                                    <Download size={16} />
+                                                </a>
+                                                <button
+                                                    onClick={() => setPreviewFile(null)}
+                                                    className="p-1.5 bg-[var(--border)]/20 hover:bg-[var(--border)]/50 rounded-lg text-[var(--foreground)] transition-colors"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 overflow-auto bg-[var(--background)] flex items-center justify-center">
+                                            {previewFile.type?.startsWith('image/') ? (
+                                                <img 
+                                                    src={previewFile.url} 
+                                                    alt="Preview" 
+                                                    className="w-full h-auto max-h-[calc(90vh-60px)] object-contain" 
+                                                />
+                                            ) : (previewFile.type === 'application/pdf' || previewFile.type?.startsWith('text/') || previewFile.type?.startsWith('video/') || previewFile.type?.startsWith('audio/')) ? (
+                                                <iframe 
+                                                    src={previewFile.url} 
+                                                    className="w-full h-full border-none bg-white"
+                                                    title="File Preview"
+                                                />
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center p-8 text-center">
+                                                    <div className="w-20 h-20 bg-purple-500/20 rounded-2xl flex items-center justify-center mb-6 text-purple-500">
+                                                        <Archive size={40} />
+                                                    </div>
+                                                    <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">No Preview Available</h3>
+                                                    <p className="text-[var(--sidebar-foreground)] max-w-md mb-8">
+                                                        This file format ({previewFile.name.split('.').pop().toUpperCase() || 'Unknown'}) cannot be previewed directly in the browser. Please download the file to view its contents.
+                                                    </p>
+                                                    <a 
+                                                        href={previewFile.url} 
+                                                        download={previewFile.name}
+                                                        className="px-6 py-3 bg-[var(--foreground)] text-[var(--background)] rounded-xl font-bold flex items-center gap-2 hover:opacity-90 transition-opacity no-underline"
+                                                    >
+                                                        <Download size={18} />
+                                                        Download File
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
                                     </motion.div>
                                 </div>
                             )}
