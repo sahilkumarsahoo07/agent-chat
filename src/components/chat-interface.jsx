@@ -51,6 +51,8 @@ import SourceCard from './source-card';
 import SourcesSidebar from './sources-sidebar';
 import ShareChatModal from './share-chat-modal';
 import AssistantIcon from './assistant-icon';
+import ExcelPreview from './excel-preview';
+import FileThumbnail from './file-thumbnail';
 import { STATIC_ASSISTANTS, MODELS } from '@/lib/assistants-config';
 
 function checkReasoningCapability(msg, activeAssistant, activeModel) {
@@ -525,10 +527,10 @@ export default function ChatInterface() {
                         });
                         reader.onerror = (e) => reject(new Error("Failed to read file"));
 
-                        if (uploadedFile.type.startsWith('image/') || uploadedFile.type === 'application/pdf') {
-                            reader.readAsDataURL(uploadedFile);
-                        } else {
+                        if (uploadedFile.type.startsWith('text/') || uploadedFile.name.endsWith('.md') || uploadedFile.name.endsWith('.csv')) {
                             reader.readAsText(uploadedFile);
+                        } else {
+                            reader.readAsDataURL(uploadedFile);
                         }
                     });
                 } catch (err) {
@@ -886,7 +888,7 @@ export default function ChatInterface() {
                                                             {!msg.isThinking && !msg.content && !msg.reasoning && !msg.attachment && (
                                                                 <div className="w-5 h-5 rounded-full border-2 border-t-transparent border-[var(--foreground)] animate-spin my-3 opacity-50" />
                                                             )}
-                                                            {(msg.content || (msg.isThinking && msg.reasoning)) && (
+                                                            {(msg.content || (msg.isThinking && msg.reasoning) || msg.attachment) && (
                                                                 <div className="flex flex-col gap-3">
                                                                     {/* Sources Display */}
                                                                     {msg.sources && msg.sources.length > 0 && (
@@ -1055,6 +1057,7 @@ export default function ChatInterface() {
                                                                                             {msg.attachment.type.startsWith('image/') ? (
                                                                                                 <div 
                                                                                                     onClick={() => setPreviewFile({ url: msg.attachment.content, type: msg.attachment.type, name: msg.attachment.name })}
+                                                                                                    className="cursor-pointer overflow-hidden rounded-xl border border-[var(--border)] max-w-[350px]"
                                                                                                 >
                                                                                                     <img
                                                                                                         src={msg.attachment.content}
@@ -1067,8 +1070,8 @@ export default function ChatInterface() {
                                                                                                     onClick={() => setPreviewFile({ url: msg.attachment.content, type: msg.attachment.type, name: msg.attachment.name })}
                                                                                                     className="inline-flex items-center gap-3 p-2.5 pr-4 bg-[var(--background)]/40 hover:bg-[var(--background)]/60 rounded-xl border border-[var(--border)] transition-all duration-200 group/file cursor-pointer"
                                                                                                 >
-                                                                                                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500/80 to-blue-500/80 rounded-lg flex items-center justify-center flex-shrink-0 text-white shadow-sm group-hover/file:scale-105 transition-transform">
-                                                                                                        {msg.attachment.type === 'application/pdf' ? <FileText size={20} /> : <Archive size={20} />}
+                                                                                                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500/80 to-blue-500/80 rounded-lg flex items-center justify-center flex-shrink-0 text-white shadow-sm group-hover/file:scale-105 transition-transform overflow-hidden border border-white/20">
+                                                                                                        <FileThumbnail url={msg.attachment.content} type={msg.attachment.type} name={msg.attachment.name} />
                                                                                                     </div>
                                                                                                     <div className="flex flex-col min-w-0">
                                                                                                         <span className="text-[13px] font-bold text-[var(--foreground)] truncate max-w-[220px]">{msg.attachment.name}</span>
@@ -1347,13 +1350,7 @@ export default function ChatInterface() {
                                                         setPreviewFile({ url: URL.createObjectURL(uploadedFile), type: uploadedFile.type, name: uploadedFile.name });
                                                     }}
                                                 >
-                                                    {uploadedFile.type.startsWith('image/') ? (
-                                                        <img src={URL.createObjectURL(uploadedFile)} alt="preview" className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <div className="w-full h-full bg-purple-500 flex items-center justify-center">
-                                                            <Archive size={16} />
-                                                        </div>
-                                                    )}
+                                                    <FileThumbnail file={uploadedFile} />
                                                 </div>
                                                 <span className="text-[12px] font-medium text-[var(--foreground)] truncate max-w-[150px]">{uploadedFile.name}</span>
                                                 <button onClick={() => setUploadedFile(null)} className="ml-1 opacity-60 hover:opacity-100"><X size={14} /></button>
@@ -1584,10 +1581,12 @@ export default function ChatInterface() {
                                                     alt="Preview" 
                                                     className="w-full h-auto max-h-[calc(90vh-60px)] object-contain" 
                                                 />
+                                            ) : (previewFile.name?.toLowerCase().endsWith('.xlsx') || previewFile.name?.toLowerCase().endsWith('.xls') || previewFile.name?.toLowerCase().endsWith('.csv')) ? (
+                                                <ExcelPreview fileUrl={previewFile.url} />
                                             ) : (previewFile.type === 'application/pdf' || previewFile.type?.startsWith('text/') || previewFile.type?.startsWith('video/') || previewFile.type?.startsWith('audio/')) ? (
                                                 <iframe 
                                                     src={previewFile.url} 
-                                                    className="w-full h-full border-none bg-white"
+                                                    className="w-full h-full border-none bg-white rounded-b-xl"
                                                     title="File Preview"
                                                 />
                                             ) : (
