@@ -217,8 +217,35 @@ export default function ChatInterface() {
         customAssistants,
         setIsMobileDrawerOpen
     } = useChat();
-
     const isGenerating = streamingIds.includes(activeConversationId);
+
+    const [disabledModels, setDisabledModels] = useState({});
+
+    useEffect(() => {
+        const updateDisabledModels = () => {
+            try {
+                const stored = JSON.parse(localStorage.getItem('disabled_models') || '{}');
+                const now = Date.now();
+                const valid = {};
+                let changed = false;
+                for (const [mId, expiry] of Object.entries(stored)) {
+                    if (expiry > now) {
+                        valid[mId] = expiry;
+                    } else {
+                        changed = true;
+                    }
+                }
+                if (changed) {
+                    localStorage.setItem('disabled_models', JSON.stringify(valid));
+                }
+                setDisabledModels(valid);
+            } catch (e) { }
+        };
+
+        updateDisabledModels();
+        window.addEventListener('disabled-models-updated', updateDisabledModels);
+        return () => window.removeEventListener('disabled-models-updated', updateDisabledModels);
+    }, []);
 
     const params = useParams();
     const router = useRouter();
@@ -1130,30 +1157,59 @@ export default function ChatInterface() {
                                                                                 </span>
                                                                             </button>
 
-                                                                            {/* Regenerate Dropdown */}
                                                                             {regenerateId === msg.id && (
                                                                                 <div className={cn(
-                                                                                    "absolute left-0 w-60 bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl p-1 z-[100] max-h-[280px] overflow-y-auto custom-scrollbar",
+                                                                                    "absolute left-0 w-[340px] bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-2xl p-1 z-[100] max-h-[280px] overflow-y-auto custom-scrollbar",
                                                                                     dropdownPosition[msg.id] === 'below' ? "top-full mt-2" : "bottom-full mb-2"
                                                                                 )}>
 
                                                                                     <div className="px-3 py-1.5 text-[10px] font-bold text-[var(--sidebar-foreground)] uppercase opacity-50">Regenerate with</div>
-                                                                                    {models.map((model, mIdx) => (
+                                                                                    {models.map((model, mIdx) => {
+                                                                                        const isDisabled = disabledModels[model.model];
+                                                                                        return (
                                                                                         <button
                                                                                             key={mIdx}
-                                                                                            onClick={() => {
+                                                                                            onClick={(e) => {
+                                                                                                if (isDisabled) {
+                                                                                                    e.preventDefault();
+                                                                                                    return;
+                                                                                                }
                                                                                                 setSelectedModel(model);
                                                                                                 setRegenerateId(null);
                                                                                                 regenerateResponse(activeConversationId, model.model, model.name, activeAssistant?.id, msg.id);
                                                                                             }}
-                                                                                            className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-[var(--border)]/50 text-[var(--foreground)] transition-all text-left group/item"
+                                                                                            className={cn("w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-left group/item", isDisabled ? "opacity-40 cursor-not-allowed bg-[var(--border)]/10" : "hover:bg-[var(--border)]/50 text-[var(--foreground)]")}
                                                                                         >
-                                                                                            <div className="w-4.5 h-4.5 flex items-center justify-center rounded-md bg-[var(--border)]/30 overflow-hidden shrink-0">
-                                                                                                <img src={model.icon} className="w-3 h-3 object-contain model-icon" />
+                                                                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                                                                <div className="w-4 h-4 flex items-center justify-center rounded-md bg-[var(--border)]/30 overflow-hidden shrink-0">
+                                                                                                    <img src={model.icon} className={cn("w-3 h-3 object-contain model-icon", isDisabled && "grayscale")} />
+                                                                                                </div>
+                                                                                                <span className="text-[13px] font-semibold truncate leading-tight">{model.name}</span>
                                                                                             </div>
-                                                                                            <span className="text-[13px] font-medium truncate">{model.name}</span>
+                                                                                            
+                                                                                            {isDisabled ? (
+                                                                                                <div className="flex items-center justify-end overflow-hidden max-w-0 opacity-0 group-hover/item:max-w-[200px] group-hover/item:opacity-100 transition-all duration-300 ease-out shrink-0">
+                                                                                                    <div className="flex items-center gap-1.5 pl-2">
+                                                                                                        <span className="text-[10px] font-medium px-2 py-[1px] rounded-full border border-red-500/40 bg-red-500/10 text-red-500 whitespace-nowrap">
+                                                                                                            Upstream Error
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            ) : (
+                                                                                                model.tags && model.tags.length > 0 && (
+                                                                                                    <div className="flex items-center justify-end overflow-hidden max-w-0 opacity-0 group-hover/item:max-w-[250px] group-hover/item:opacity-100 transition-all duration-300 ease-out shrink-0">
+                                                                                                        <div className="flex items-center gap-1.5 pl-2">
+                                                                                                            {model.tags.map((tag, tIdx) => (
+                                                                                                                <span key={tIdx} className="text-[10px] font-medium px-2 py-[1px] rounded-full border border-solid whitespace-nowrap" style={{ color: tag.color || '#888', borderColor: tag.color ? `${tag.color}40` : '#88888840', backgroundColor: tag.color ? `${tag.color}10` : 'transparent' }}>
+                                                                                                                    {tag.label}
+                                                                                                                </span>
+                                                                                                            ))}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                )
+                                                                                            )}
                                                                                         </button>
-                                                                                    ))}
+                                                                                    )})}
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -1303,18 +1359,52 @@ export default function ChatInterface() {
                                                             initial={{ opacity: 0, y: 10 }}
                                                             animate={{ opacity: 1, y: -10 }}
                                                             exit={{ opacity: 0, y: 10 }}
-                                                            className="absolute bottom-full left-0 mb-2 w-56 bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl p-1.5 z-50 max-h-[300px] overflow-y-auto custom-scrollbar"
+                                                            className="absolute bottom-full left-0 mb-2 w-[340px] bg-[var(--card)] border border-[var(--border)] rounded-2xl shadow-xl p-1.5 z-50 max-h-[300px] overflow-y-auto custom-scrollbar"
                                                         >
-                                                            {models.filter(m => m.model !== 'user_default').map((model, idx) => (
+                                                            {models.filter(m => m.model !== 'user_default').map((model, idx) => {
+                                                                const isDisabled = disabledModels[model.model];
+                                                                return (
                                                                 <button
                                                                     key={idx}
-                                                                    onClick={() => { setSelectedModel(model); setHasUserSelectedModel(true); setIsDropdownOpen(false); }}
-                                                                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] text-[var(--sidebar-foreground)] hover:bg-[var(--border)]/50 hover:text-[var(--foreground)] transition-all text-left"
+                                                                    onClick={(e) => {
+                                                                        if (isDisabled) {
+                                                                            e.preventDefault();
+                                                                            return;
+                                                                        }
+                                                                        setSelectedModel(model); setHasUserSelectedModel(true); setIsDropdownOpen(false); 
+                                                                    }}
+                                                                    className={cn("w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all text-left group/item", isDisabled ? "opacity-40 cursor-not-allowed bg-[var(--border)]/10" : "text-[var(--sidebar-foreground)] hover:bg-[var(--border)]/50 hover:text-[var(--foreground)]")}
                                                                 >
-                                                                    <img src={model.icon} className="w-3.5 h-3.5 model-icon" />
-                                                                    <span className="font-medium">{model.name}</span>
+                                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                                        <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                                                                            <img src={model.icon} className={cn("w-full h-full object-contain model-icon", isDisabled && "grayscale")} />
+                                                                        </div>
+                                                                        <span className={cn("text-[13px] font-semibold truncate leading-tight", !isDisabled && "text-[var(--foreground)]")}>{model.name}</span>
+                                                                    </div>
+                                                                    
+                                                                    {isDisabled ? (
+                                                                        <div className="flex items-center justify-end overflow-hidden max-w-0 opacity-0 group-hover/item:max-w-[200px] group-hover/item:opacity-100 transition-all duration-300 ease-out shrink-0">
+                                                                            <div className="flex items-center gap-1.5 pl-2">
+                                                                                <span className="text-[10px] font-medium px-2 py-[1px] rounded-full border border-red-500/40 bg-red-500/10 text-red-500 whitespace-nowrap">
+                                                                                    Upstream Error
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        model.tags && model.tags.length > 0 && (
+                                                                            <div className="flex items-center justify-end overflow-hidden max-w-0 opacity-0 group-hover/item:max-w-[250px] group-hover/item:opacity-100 transition-all duration-300 ease-out shrink-0">
+                                                                                <div className="flex items-center gap-1.5 pl-2">
+                                                                                    {model.tags.map((tag, tIdx) => (
+                                                                                        <span key={tIdx} className="text-[10px] font-medium px-2 py-[1px] rounded-full border border-solid whitespace-nowrap" style={{ color: tag.color || '#888', borderColor: tag.color ? `${tag.color}40` : '#88888840', backgroundColor: tag.color ? `${tag.color}10` : 'transparent' }}>
+                                                                                            {tag.label}
+                                                                                        </span>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </div>
+                                                                        )
+                                                                    )}
                                                                 </button>
-                                                            ))}
+                                                            )})}
                                                         </motion.div>
                                                     )}
                                                 </AnimatePresence>

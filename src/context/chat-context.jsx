@@ -371,6 +371,18 @@ export function ChatProvider({ children }) {
                     setTimeout(() => window.dispatchEvent(new Event('open-subscription-modal')), 1500);
                     return; // Exit completely without throwing an error
                 }
+                
+                if (response.status >= 500) {
+                    try {
+                        const disabledModels = JSON.parse(localStorage.getItem('disabled_models') || '{}');
+                        disabledModels[modelId] = Date.now() + 24 * 60 * 60 * 1000; // Disable for 24 hours
+                        localStorage.setItem('disabled_models', JSON.stringify(disabledModels));
+                        window.dispatchEvent(new Event('disabled-models-updated'));
+                    } catch (e) {
+                        console.error('Failed to update disabled models', e);
+                    }
+                }
+
                 throw new Error(`API Error: ${response.status}`);
             }
 
