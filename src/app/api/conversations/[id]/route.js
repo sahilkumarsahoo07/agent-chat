@@ -42,6 +42,11 @@ export async function GET(request, { params }) {
 
         const { id } = await params;
 
+        // Prevent Prisma crash by validating ObjectId format
+        if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+            return error('Conversation not found', 404);
+        }
+
         const conversation = await prisma.conversation.findFirst({
             where: { id, userId: auth.userId },
             include: {
@@ -119,6 +124,10 @@ export async function PUT(request, { params }) {
         const { id } = await params;
         const body = await request.json();
 
+        if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+            return error('Conversation not found', 404);
+        }
+
         // Verify ownership
         const existing = await prisma.conversation.findFirst({
             where: { id, userId: auth.userId },
@@ -171,6 +180,10 @@ export async function DELETE(request, { params }) {
         if (!auth) return error('Unauthorized', 401);
 
         const { id } = await params;
+
+        if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+            return error('Conversation not found', 404);
+        }
 
         // Verify ownership
         const existing = await prisma.conversation.findFirst({

@@ -7,6 +7,8 @@ import { NextResponse } from 'next/server';
 const PUBLIC_ROUTES = [
     '/api/auth/login',
     '/api/auth/register',
+    '/api/auth/google',
+    '/api/auth/google/callback',
     '/api/docs',
     '/api/chat',
     '/api/public-sync',
@@ -17,7 +19,7 @@ const PUBLIC_DYNAMIC_PREFIXES = [
     '/api/share/',
 ];
 
-export function proxy(request) {
+export function middleware(request) {
     const { pathname } = request.nextUrl;
 
     // Only apply to /api routes

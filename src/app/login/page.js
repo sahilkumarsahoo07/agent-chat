@@ -2,7 +2,7 @@
 
 import AuthCard from '@/components/auth-card';
 import { useAuth } from '@/context/auth-context';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams } from 'next/navigation';
@@ -15,12 +15,20 @@ function LoginForm() {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(email)) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+
         setIsLoading(true);
         try {
             await login(email, password, callbackUrl);
@@ -53,7 +61,7 @@ function LoginForm() {
                     <div className="relative group/input">
                         <input
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => setEmail(e.target.value.toLowerCase())}
                             type="email"
                             placeholder="name@example.com"
                             className="w-full bg-white/[0.03] border border-white/10 rounded-[16px] py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/10 focus:outline-none focus:ring-1 focus:ring-white/20 focus:bg-white/[0.05] transition-all outline-none relative z-10 font-medium"
@@ -76,12 +84,19 @@ function LoginForm() {
                         <input
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
-                            className="w-full bg-white/[0.03] border border-white/10 rounded-[16px] py-3 pl-10 pr-4 text-sm text-white placeholder:text-white/10 focus:outline-none focus:ring-1 focus:ring-white/20 focus:bg-white/[0.05] transition-all outline-none relative z-10 font-medium"
+                            className="w-full bg-white/[0.03] border border-white/10 rounded-[16px] py-3 pl-10 pr-10 text-sm text-white placeholder:text-white/10 focus:outline-none focus:ring-1 focus:ring-white/20 focus:bg-white/[0.05] transition-all outline-none relative z-10 font-medium"
                             required
                         />
                         <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within/input:text-white transition-colors z-10" />
+                        <button 
+                            type="button" 
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors z-20"
+                        >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
                     </div>
                 </motion.div>
 
